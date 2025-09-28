@@ -1,0 +1,21 @@
+object_detection_openvino_node:
+  ros__parameters:
+    # Detection mode
+    mode: "armor"
+    
+    # Model inference parameters
+    input_width: 640
+    input_height: 640
+    score_threshold: 0.5
+    nms_threshold: 0.4
+    
+    # Model file paths (update these paths according to your setup)
+    xml_path: "/home/amatrix02/Dart_2026_ws/src/object_detection_openvino/config/openvino/Katrin.xml"
+    bin_path: "/home/amatrix02/Dart_2026_ws/src/object_detection_openvino/config/openvino/Katrin.bin"
+    device: "CPU"  # Options: CPU, GPU, MYRIAD, etc.
+    
+    # Topic names
+    image_topic: "image_raw" # the topic subscribed to publish camera image  e.g., "/camera/image_raw"
+    detection_topic: "/detector/target2d_array" # the topic to publish detection results
+    
+    # Topic settings are handled in launch file remappings

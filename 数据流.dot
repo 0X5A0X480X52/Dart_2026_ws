@@ -1,0 +1,47 @@
+digraph ros2_stereo_system {
+    rankdir=TD;
+    node [shape=box, style=filled, color=lightblue];
+
+    // ROS2 节点
+    StereoCameraDriver [label="stereo_camera_driver"];
+    ObjectDetector [label="object_detection_openvino"];
+    CoordFilter [label="coordinate_filter_node"];
+    TargetMatcher [label="target_matcher_node"];
+    StereoDistance [label="stereo_distance_estimator"];
+    DistanceFilter [label="distance_filter_node"];
+    SerialDriver [label="rm_serial_driver"];
+
+    // Topics
+    LeftImage [shape=ellipse, style=filled, color=lightgreen, label="/camera/left/image_raw\n(sensor_msgs/Image)"];
+    RightImage [shape=ellipse, style=filled, color=lightgreen, label="/camera/right/image_raw\n(sensor_msgs/Image)"];
+    Target2DArrayRaw [shape=ellipse, style=filled, color=lightgreen, label="/detector/target2d_array\n(stereo_msgs/Target2DArray)"];
+    Target2DArrayFiltered [shape=ellipse, style=filled, color=lightgreen, label="/filter/target2d_array\n(stereo_msgs/Target2DArray)"];
+    MultiViewTargetArray [shape=ellipse, style=filled, color=lightgreen, label="/matcher/multiview_target_array\n(stereo_msgs/MultiViewTargetArray)"];
+    Target3DArrayRaw [shape=ellipse, style=filled, color=lightgreen, label="/stereo/target3d_array_raw\n(stereo_msgs/Target3DArray)"];
+    Target3DArrayFiltered [shape=ellipse, style=filled, color=lightgreen, label="/stereo/target3d_array\n(stereo_msgs/Target3DArray)"];
+    SerialOutput [shape=ellipse, style=filled, color=lightgreen, label="/serial/output_targets\n(stereo_msgs/Target3DArray)"];
+
+    // 数据流
+    StereoCameraDriver -> LeftImage;
+    StereoCameraDriver -> RightImage;
+
+    LeftImage -> ObjectDetector;
+    RightImage -> ObjectDetector;
+
+    ObjectDetector -> Target2DArrayRaw;
+    Target2DArrayRaw -> CoordFilter;
+
+    CoordFilter -> Target2DArrayFiltered;
+    Target2DArrayFiltered -> TargetMatcher;
+
+    TargetMatcher -> MultiViewTargetArray;
+    MultiViewTargetArray -> StereoDistance;
+
+    StereoDistance -> Target3DArrayRaw;
+    Target3DArrayRaw -> DistanceFilter;
+
+    DistanceFilter -> Target3DArrayFiltered;
+    Target3DArrayFiltered -> SerialDriver;
+
+    SerialDriver -> SerialOutput;
+}
