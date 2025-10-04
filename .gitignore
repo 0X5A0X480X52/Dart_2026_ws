@@ -2,3 +2,6 @@
 build/**
 install/**
 log/**
+MvCamCtrlSDK_**
+kernel_version
+GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB*

@@ -1,6 +1,8 @@
 #include "object_detection_openvino/object_detection_openvino_node.hpp"
 #include <rm_interfaces/msg/target2_d.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <iomanip>
+#include <sstream>
 
 ObjectDetectionOpenvinoNode::ObjectDetectionOpenvinoNode() 
     : Node("object_detection_openvino_node"), startup_(true)
@@ -21,6 +23,13 @@ ObjectDetectionOpenvinoNode::ObjectDetectionOpenvinoNode()
     // Create publisher for detection results
     target_publisher_ = this->create_publisher<rm_interfaces::msg::Target2DArray>(
         detection_topic_, 10);
+    
+    // Create publisher for debug image (if enabled)
+    if (publish_debug_image_) {
+        debug_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>(
+            debug_image_topic_, 10);
+        RCLCPP_INFO(this->get_logger(), "Debug image publisher created");
+    }
     
     RCLCPP_INFO(this->get_logger(), "Object Detection OpenVINO Node initialized successfully");
 }
@@ -43,6 +52,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("device", "CPU");
     this->declare_parameter("image_topic", "image_raw");
     this->declare_parameter("detection_topic", "/detector/target2d_array");
+    this->declare_parameter("debug_image_topic", "/detector/debug_image");
+    this->declare_parameter("publish_debug_image", false);
     
     mode_ = this->get_parameter("mode").as_string();
     input_width_ = this->get_parameter("input_width").as_int();
@@ -54,6 +65,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     device_ = this->get_parameter("device").as_string();
     image_topic_ = this->get_parameter("image_topic").as_string();
     detection_topic_ = this->get_parameter("detection_topic").as_string();
+    debug_image_topic_ = this->get_parameter("debug_image_topic").as_string();
+    publish_debug_image_ = this->get_parameter("publish_debug_image").as_bool();
     
     RCLCPP_INFO(this->get_logger(), "Parameters initialized:");
     RCLCPP_INFO(this->get_logger(), "  Mode: %s", mode_.c_str());
@@ -65,6 +78,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     RCLCPP_INFO(this->get_logger(), "  Device: %s", device_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Image topic: %s", image_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Detection topic: %s", detection_topic_.c_str());
+    RCLCPP_INFO(this->get_logger(), "  Debug image topic: %s", debug_image_topic_.c_str());
+    RCLCPP_INFO(this->get_logger(), "  Publish debug image: %s", publish_debug_image_ ? "true" : "false");
 }
 
 void ObjectDetectionOpenvinoNode::loadModel()
@@ -116,6 +131,15 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
         
         // Publish detection results
         target_publisher_->publish(target_array_msg);
+        
+        // Publish debug image if enabled
+        if (publish_debug_image_ && debug_image_publisher_) {
+            cv::Mat debug_image = cv_ptr->image.clone();
+            drawDebugImage(debug_image, detection_results);
+            
+            auto debug_msg = cv_bridge::CvImage(msg->header, "bgr8", debug_image).toImageMsg();
+            debug_image_publisher_->publish(*debug_msg);
+        }
         
         RCLCPP_DEBUG(this->get_logger(), "Published %zu detections", detection_results.size());
     }
@@ -174,6 +198,76 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
     }
     
     return target_array;
+}
+
+void ObjectDetectionOpenvinoNode::drawDebugImage(
+    cv::Mat& image,
+    const std::vector<ROS2OpenvinoInfer::Light>& detections)
+{
+    // Define colors for different classes
+    const cv::Scalar COLOR_GREEN(0, 255, 0);
+    const cv::Scalar COLOR_RED(0, 0, 255);
+    const cv::Scalar COLOR_BLUE(255, 0, 0);
+    const cv::Scalar COLOR_YELLOW(0, 255, 255);
+    
+    for (const auto& detection : detections) {
+        // Choose color based on detection ID
+        cv::Scalar box_color;
+        std::string class_name;
+        
+        switch (detection.id) {
+            case 0:
+                box_color = COLOR_BLUE;
+                class_name = "armor_blue";
+                break;
+            case 1:
+                box_color = COLOR_RED;
+                class_name = "armor_red";
+                break;
+            case 8:
+                box_color = COLOR_GREEN;
+                class_name = "armor";
+                break;
+            default:
+                box_color = COLOR_YELLOW;
+                class_name = "unknown";
+                break;
+        }
+        
+        // Draw bounding box
+        cv::rectangle(image, detection.box, box_color, 2);
+        
+        // Draw center point
+        cv::circle(image, detection.center_point, 4, box_color, -1);
+        
+        // Prepare label with class name and confidence
+        std::stringstream label_stream;
+        label_stream << class_name << ": " << std::fixed << std::setprecision(2) << detection.score;
+        std::string label = label_stream.str();
+        
+        // Get label size for background rectangle
+        int baseline = 0;
+        cv::Size label_size = cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+        
+        // Draw background rectangle for label
+        cv::Point label_origin(detection.box.x, detection.box.y - 5);
+        if (label_origin.y < 0) label_origin.y = detection.box.y + detection.box.height + 15;
+        
+        cv::rectangle(image, 
+                     cv::Point(label_origin.x, label_origin.y - label_size.height - 5),
+                     cv::Point(label_origin.x + label_size.width, label_origin.y + baseline),
+                     box_color, -1);
+        
+        // Draw label text
+        cv::putText(image, label, label_origin, 
+                   cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+    }
+    
+    // Draw detection count in top-left corner
+    std::stringstream info_stream;
+    info_stream << "Detections: " << detections.size();
+    cv::putText(image, info_stream.str(), cv::Point(10, 30),
+               cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
 }
 
 int main(int argc, char** argv)

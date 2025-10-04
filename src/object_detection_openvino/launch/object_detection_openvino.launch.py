@@ -1,10 +1,26 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
+    
+    # Get the package directory
+    pkg_dir = get_package_share_directory('object_detection_openvino')
+    
+    # Default config files
+    params_file = os.path.join(pkg_dir, 'config', 'params.yaml')
+    print(f"Using params file: {params_file}")
+    
     return LaunchDescription([
+        DeclareLaunchArgument(
+            name='params_file',
+            default_value=params_file,
+            description='Path to the ROS2 parameters file'
+        ),
         DeclareLaunchArgument(
             'mode',
             default_value='armor',
@@ -56,14 +72,7 @@ def generate_launch_description():
             executable='object_detection_openvino_node',
             name='object_detection_openvino_node',
             parameters=[{
-                'mode': LaunchConfiguration('mode'),
-                'input_width': LaunchConfiguration('input_width'),
-                'input_height': LaunchConfiguration('input_height'),
-                'score_threshold': LaunchConfiguration('score_threshold'),
-                'nms_threshold': LaunchConfiguration('nms_threshold'),
-                'xml_path': LaunchConfiguration('xml_path'),
-                'bin_path': LaunchConfiguration('bin_path'),
-                'device': LaunchConfiguration('device'),
+                LaunchConfiguration('params_file'),
             }],
             remappings=[
                 ('image_raw', LaunchConfiguration('image_topic')),

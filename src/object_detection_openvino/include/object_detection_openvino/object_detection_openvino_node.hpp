@@ -21,6 +21,7 @@ private:
     // ROS2 publishers and subscribers
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
     rclcpp::Publisher<rm_interfaces::msg::Target2DArray>::SharedPtr target_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_image_publisher_;
     
     // OpenVINO inference engine
     std::unique_ptr<ROS2OpenvinoInfer> openvino_infer_;
@@ -39,12 +40,17 @@ private:
     std::string device_;
     std::string image_topic_;
     std::string detection_topic_;
+    std::string debug_image_topic_;
+    bool publish_debug_image_;
     
     void initializeParameters();
     void loadModel();
     rm_interfaces::msg::Target2DArray convertToRosMessage(
         const std::vector<ROS2OpenvinoInfer::Light>& detections,
         const std_msgs::msg::Header& header);
+    void drawDebugImage(
+        cv::Mat& image,
+        const std::vector<ROS2OpenvinoInfer::Light>& detections);
 };
 
 #endif // OBJECT_DETECTION_OPENVINO_NODE_HPP_

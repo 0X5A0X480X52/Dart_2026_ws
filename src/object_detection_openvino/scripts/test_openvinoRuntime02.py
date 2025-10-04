@@ -12,7 +12,7 @@ compiled_model = core.compile_model(model=model, device_name="CPU")
 # 2. 输入预处理
 input_layer = compiled_model.input(0)
 input_shape = input_layer.shape  # 例如 [1,3,640,640] (NCHW)
-image = cv2.imread("input.jpg")
+image = cv2.imread(r"/home/amatrix/Dart_2026_ws/src/object_detection_openvino/scripts/test02.png")
 resized_image = cv2.resize(image, (input_shape[3], input_shape[2]))  # 调整到模型输入尺寸
 input_data = np.expand_dims(resized_image.transpose(2,0,1), axis=0).astype(np.float32)  # HWC → NCHW
 
@@ -67,6 +67,7 @@ for i in indices:
     x_min, y_min, x_max, y_max = box
     cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
     label = f"Class {class_ids[i]}: {scores[i]:.2f}"
+    print(label)
     cv2.putText(image, label, (x_min, y_min - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,255,0), 1)
 
-cv2.imwrite("output.jpg", image)
+cv2.imwrite("output2.jpg", image)

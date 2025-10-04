@@ -35,9 +35,13 @@ ROS2OpenvinoInfer::ROS2OpenvinoInfer(
        .model()
        .set_layout("NCHW");
 
-    ppp.output()
-       .tensor()
-       .set_element_type(ov::element::f32);
+    // Configure output preprocessing for models with multiple outputs
+    // Set output tensor type for all outputs
+    for (size_t i = 0; i < this->model_->outputs().size(); i++) {
+        ppp.output(i)
+           .tensor()
+           .set_element_type(ov::element::f32);
+    }
 
     this->model_ = ppp.build();
 
@@ -66,17 +70,14 @@ std::vector<ROS2OpenvinoInfer::Light> ROS2OpenvinoInfer::infer(
         this->compiled_model_.input().get_shape(),
         input_data);
 
+    // Simplified single-request inference (no double buffering)
+    this->infer_requests_[CURR].set_input_tensor(input_tensor);
+    this->infer_requests_[CURR].infer();  // Synchronous inference
+    
     // Handle startup phase
     if (startup) {
-        this->infer_requests_[CURR].set_input_tensor(input_tensor);
-        this->infer_requests_[CURR].start_async();
         return {};
     }
-
-    this->infer_requests_[NEXT].set_input_tensor(input_tensor);
-    this->infer_requests_[NEXT].start_async();
-
-    this->infer_requests_[CURR].wait();
 
     // Process output
     std::vector<float> confidences;
@@ -143,11 +144,6 @@ std::vector<ROS2OpenvinoInfer::Light> ROS2OpenvinoInfer::infer(
         });
     }
 
-    // Swap inference requests for next iteration
-    auto change = this->infer_requests_[CURR];
-    this->infer_requests_[CURR] = this->infer_requests_[NEXT];
-    this->infer_requests_[NEXT] = change;
-
     // Adjust coordinates back to original image
     fitRec(result, src.size(), dst_size);
     return result;
@@ -164,15 +160,18 @@ ROS2OpenvinoInfer::Resize ROS2OpenvinoInfer::letterBox(cv::Mat& src, const cv::S
     int mid_h = static_cast<int>(in_h * scale);
     int mid_w = static_cast<int>(in_w * scale);
 
-    cv::resize(src, src, cv::Size(mid_w, mid_h));
+    // Create a copy to avoid modifying the source image
+    cv::Mat resized;
+    cv::resize(src, resized, cv::Size(mid_w, mid_h));
 
     int dh = (static_cast<int>(out_h) - mid_h) / 2;
     int dw = (static_cast<int>(out_w) - mid_w) / 2;
 
-    cv::copyMakeBorder(src, src, dh, dh, dw, dw, cv::BORDER_CONSTANT, cv::Scalar(114, 114, 114));
+    cv::Mat padded;
+    cv::copyMakeBorder(resized, padded, dh, dh, dw, dw, cv::BORDER_CONSTANT, cv::Scalar(114, 114, 114));
 
     ROS2OpenvinoInfer::Resize resize;
-    resize.resized_image = src;
+    resize.resized_image = padded;
     resize.dh = dh;
     resize.dw = dw;
     return resize;
