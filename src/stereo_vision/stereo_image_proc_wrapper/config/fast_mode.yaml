@@ -1,0 +1,24 @@
+/**:
+  ros__parameters:
+    # Fast disparity settings
+    # Optimized for speed over accuracy
+    
+    stereo_algorithm: 1  # SGBM
+    min_disparity: 0
+    disparity_range: 64  # Smaller range for faster processing
+    correlation_window_size: 21  # Larger for smoother but faster results
+    
+    uniqueness_ratio: 5
+    texture_threshold: 10
+    
+    speckle_size: 50
+    speckle_range: 4
+    
+    prefilter_cap: 31
+    prefilter_size: 5
+    
+    full_dp: false  # Disable for speed
+    
+    use_color: true
+    approximate_sync: true
+    queue_size: 5

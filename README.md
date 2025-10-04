@@ -47,3 +47,11 @@ sudo apt install libopencv-dev
 在 ``src/rm_hardware_driver/`` 下需要安装相应的相机驱动包。本项目提供了海康相机、大恒相机、mindvision 相机的驱动，直接编译即可。
 
 具体使用哪个相机驱动，请在 ``src/rm_bringup/launch/bringup.launch.py`` 中进行配置。
+
+### stereo_image_proc
+
+`stereo_image_proc` 用于双目图像的处理和视差计算。其安装命令如下：
+
+```bash
+sudo apt install ros-humble-image-pipeline
+```

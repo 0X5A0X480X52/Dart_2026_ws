@@ -1,22 +1,19 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>stereo_distance_estimator</name>
+  <name>stereo_image_proc_wrapper</name>
   <version>0.0.0</version>
-  <description>Stereo distance estimator node that converts 2D targets to 3D using disparity map or point cloud</description>
+  <description>Stereo vision processing wrapper using ROS2 stereo_image_proc library</description>
   <maintainer email="3432900546@qq.com">amatrix02</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <depend>rclcpp</depend>
-  <depend>rclcpp_components</depend>
-  <depend>rm_interfaces</depend>
-  <depend>sensor_msgs</depend>
-  <depend>geometry_msgs</depend>
-  <depend>message_filters</depend>
-  <depend>cv_bridge</depend>
-  <depend>OpenCV</depend>
+  <exec_depend>stereo_image_proc</exec_depend>
+  <exec_depend>image_proc</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>stereo_msgs</exec_depend>
+  <exec_depend>rm_interfaces</exec_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

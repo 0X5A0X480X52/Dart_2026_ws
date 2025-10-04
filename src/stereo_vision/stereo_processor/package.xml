@@ -1,16 +1,24 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>target_matcher</name>
+  <name>stereo_processor</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
+  <description>Stereo image processing node using stereo_image_proc for rectification, disparity and point cloud generation</description>
   <maintainer email="3432900546@qq.com">amatrix02</maintainer>
-  <license>TODO: License declaration</license>
+  <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
   <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>stereo_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>image_geometry</depend>
+  <depend>cv_bridge</depend>
+  <depend>message_filters</depend>
+  <depend>OpenCV</depend>
   <depend>rm_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>

@@ -1,0 +1,101 @@
+digraph ros2_stereo_system_updated {
+    rankdir=TD;
+    node [shape=box, style=filled, color=lightblue];
+
+    // ROS2 节点
+    StereoCameraDriver [label="stereo_camera_driver\n(双目相机驱动)", color=lightcyan];
+    StereoProcessor [label="stereo_processor\n(新节点 - 替代 stereo_image_proc)", color=lightgreen];
+    ObjectDetector [label="object_detection_openvino\n(仅处理左图)", color=lightblue];
+    CoordFilter [label="coordinate_filter_node\n(坐标过滤)", color=lightblue];
+    StereoDistance [label="stereo_distance_estimator\n(立体测距)", color=lightblue];
+    DistanceFilter [label="distance_filter_node\n(距离过滤)", color=lightblue];
+    SerialDriver [label="rm_serial_driver\n(串口驱动)", color=lightblue];
+
+    // Topics - 输入
+    LeftImageRaw [shape=ellipse, style=filled, color=lightyellow, label="/camera/left/image_raw\n(sensor_msgs/Image)"];
+    RightImageRaw [shape=ellipse, style=filled, color=lightyellow, label="/camera/right/image_raw\n(sensor_msgs/Image)"];
+    LeftCameraInfo [shape=ellipse, style=filled, color=lightyellow, label="/camera/left/camera_info\n(sensor_msgs/CameraInfo)"];
+    RightCameraInfo [shape=ellipse, style=filled, color=lightyellow, label="/camera/right/camera_info\n(sensor_msgs/CameraInfo)"];
+
+    // Topics - stereo_processor 输出
+    LeftImageRect [shape=ellipse, style=filled, color=lightgreen, label="/camera/left/image_rect\n(sensor_msgs/Image)\n校正后的左图"];
+    RightImageRect [shape=ellipse, style=filled, color=lightgreen, label="/camera/right/image_rect\n(sensor_msgs/Image)\n校正后的右图"];
+    Disparity [shape=ellipse, style=filled, color=lightgreen, label="/stereo/disparity\n(stereo_msgs/DisparityImage)\nSGBM视差图"];
+    PointCloud [shape=ellipse, style=filled, color=lightgreen, label="/stereo/points2\n(sensor_msgs/PointCloud2)\n彩色点云"];
+
+    // Topics - 检测和过滤
+    Target2DArrayRaw [shape=ellipse, style=filled, color=lightblue, label="/detector/target2d_array\n(rm_interfaces/Target2DArray)"];
+    Target2DArrayFiltered [shape=ellipse, style=filled, color=lightblue, label="/filter/target2d_array\n(rm_interfaces/Target2DArray)"];
+    Target3DArrayRaw [shape=ellipse, style=filled, color=lightblue, label="/stereo/target3d_array_raw\n(rm_interfaces/Target3DArray)"];
+    Target3DArrayFiltered [shape=ellipse, style=filled, color=lightblue, label="/stereo/target3d_array\n(rm_interfaces/Target3DArray)"];
+    SerialOutput [shape=ellipse, style=filled, color=lightpink, label="/serial/output_targets\n(rm_interfaces/Target3DArray)\n最终输出"];
+
+    // 数据流 - 相机到处理器
+    StereoCameraDriver -> LeftImageRaw [label="原始左图"];
+    StereoCameraDriver -> RightImageRaw [label="原始右图"];
+    StereoCameraDriver -> LeftCameraInfo [label="左相机标定"];
+    StereoCameraDriver -> RightCameraInfo [label="右相机标定"];
+
+    // 数据流 - 输入到 stereo_processor
+    LeftImageRaw -> StereoProcessor;
+    RightImageRaw -> StereoProcessor;
+    LeftCameraInfo -> StereoProcessor;
+    RightCameraInfo -> StereoProcessor;
+
+    // 数据流 - stereo_processor 输出
+    StereoProcessor -> LeftImageRect [label="立体校正"];
+    StereoProcessor -> RightImageRect [label="立体校正"];
+    StereoProcessor -> Disparity [label="SGBM匹配"];
+    StereoProcessor -> PointCloud [label="3D重投影"];
+
+    // 数据流 - 目标检测
+    LeftImageRect -> ObjectDetector [label="使用校正图"];
+    ObjectDetector -> Target2DArrayRaw;
+
+    // 数据流 - 坐标过滤
+    Target2DArrayRaw -> CoordFilter;
+    CoordFilter -> Target2DArrayFiltered;
+
+    // 数据流 - 立体测距
+    Target2DArrayFiltered -> StereoDistance;
+    Disparity -> StereoDistance [label="视差信息"];
+    PointCloud -> StereoDistance [label="点云信息"];
+    StereoDistance -> Target3DArrayRaw;
+
+    // 数据流 - 距离过滤
+    Target3DArrayRaw -> DistanceFilter;
+    DistanceFilter -> Target3DArrayFiltered;
+
+    // 数据流 - 串口输出
+    Target3DArrayFiltered -> SerialDriver;
+    SerialDriver -> SerialOutput;
+
+    // 图例
+    subgraph cluster_legend {
+        label = "图例";
+        style = filled;
+        color = white;
+        
+        LegendNew [label="新节点/更新节点", color=lightgreen];
+        LegendExisting [label="现有节点", color=lightblue];
+        LegendInput [label="输入数据", color=lightyellow];
+        LegendOutput [label="处理数据", color=lightblue];
+        LegendFinal [label="最终输出", color=lightpink];
+        
+        LegendNew -> LegendExisting [style=invis];
+        LegendExisting -> LegendInput [style=invis];
+        LegendInput -> LegendOutput [style=invis];
+        LegendOutput -> LegendFinal [style=invis];
+    }
+
+    // 注释说明
+    Note [shape=note, style=filled, color=lightyellow, 
+          label="关键改进:\n\
+1. stereo_processor 集成立体校正、\n\
+   视差计算和点云生成\n\
+2. 使用 SGBM 算法提高视差质量\n\
+3. 生成带颜色信息的点云\n\
+4. 参数可配置，易于调优\n\
+5. 替代独立的 stereo_image_proc\n\
+"];
+}

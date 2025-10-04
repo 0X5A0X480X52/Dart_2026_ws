@@ -1,0 +1,53 @@
+# Stereo Processor Configuration
+
+stereo_processor:
+  ros__parameters:
+    # 立体匹配算法: 'bm' (Block Matching) 或 'sgbm' (Semi-Global Block Matching)
+    # SGBM 通常提供更好的结果，但计算量更大
+    stereo_algorithm: 'sgbm'
+    
+    # 视差参数
+    # 最小视差值（通常为0）
+    min_disparity: 0
+    
+    # 视差搜索范围（必须是16的倍数）
+    # 较大的值可以检测更近的物体，但会增加计算时间
+    num_disparities: 128
+    
+    # 匹配块大小（必须是奇数，范围：3-11）
+    # 较大的块大小会产生更平滑的视差图，但细节较少
+    block_size: 15
+    
+    # SGBM 参数
+    # 唯一性比率（5-15）
+    # 用于拒绝模糊匹配，值越大越严格
+    uniqueness_ratio: 10
+    
+    # 斑点过滤窗口大小（50-200）
+    # 用于移除小的不连续视差区域
+    speckle_window_size: 100
+    
+    # 斑点过滤范围（1-2）
+    # 视差变化阈值
+    speckle_range: 4
+    
+    # 左右视差检查的最大差异（-1表示禁用）
+    # 用于过滤不一致的视差
+    disp12_max_diff: 1
+    
+    # 预滤波截断值（1-63）
+    prefilter_cap: 31
+    
+    # 预滤波大小（5-255，必须是奇数）
+    prefilter_size: 5
+    
+    # 纹理阈值（0-很大）
+    # 低纹理区域的过滤阈值
+    texture_threshold: 10
+    
+    # 点云参数
+    # 是否在点云中包含颜色信息
+    use_color: true
+
+# 相机标定信息通过 camera_info topics 提供
+# 确保您的相机驱动程序发布正确的标定数据

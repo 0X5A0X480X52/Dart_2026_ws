@@ -1,0 +1,87 @@
+# Stereo Calibration Template
+#
+# Use ROS2 stereo calibration tool to generate this file:
+#   ros2 run camera_calibration cameracalibrator --size 8x6 --square 0.025 \
+#        --approximate 0.1 \
+#        --ros-args -r left:=/camera/left/image_raw \
+#                   -r right:=/camera/right/image_raw \
+#                   -r left_camera:=/camera/left \
+#                   -r right_camera:=/camera/right
+#
+# This will generate calibration files with proper stereo parameters including
+# the rectification matrices and projection matrices for stereo vision.
+
+# Example stereo calibration parameters
+# Replace these with your actual calibrated values
+
+# Baseline (distance between cameras) in meters
+baseline: 0.1
+
+# Left camera parameters
+left:
+  image_width: 1920
+  image_height: 1080
+  camera_name: camera_left
+  
+  camera_matrix:
+    rows: 3
+    cols: 3
+    data: [1000.0, 0.0, 960.0,
+           0.0, 1000.0, 540.0,
+           0.0, 0.0, 1.0]
+  
+  distortion_model: plumb_bob
+  
+  distortion_coefficients:
+    rows: 1
+    cols: 5
+    data: [0.0, 0.0, 0.0, 0.0, 0.0]
+  
+  rectification_matrix:
+    rows: 3
+    cols: 3
+    data: [1.0, 0.0, 0.0,
+           0.0, 1.0, 0.0,
+           0.0, 0.0, 1.0]
+  
+  projection_matrix:
+    rows: 3
+    cols: 4
+    data: [1000.0, 0.0, 960.0, 0.0,
+           0.0, 1000.0, 540.0, 0.0,
+           0.0, 0.0, 1.0, 0.0]
+
+# Right camera parameters
+right:
+  image_width: 1920
+  image_height: 1080
+  camera_name: camera_right
+  
+  camera_matrix:
+    rows: 3
+    cols: 3
+    data: [1000.0, 0.0, 960.0,
+           0.0, 1000.0, 540.0,
+           0.0, 0.0, 1.0]
+  
+  distortion_model: plumb_bob
+  
+  distortion_coefficients:
+    rows: 1
+    cols: 5
+    data: [0.0, 0.0, 0.0, 0.0, 0.0]
+  
+  rectification_matrix:
+    rows: 3
+    cols: 3
+    data: [1.0, 0.0, 0.0,
+           0.0, 1.0, 0.0,
+           0.0, 0.0, 1.0]
+  
+  projection_matrix:
+    rows: 3
+    cols: 4
+    # Note: The Tx component (last element of first row) represents baseline * focal_length
+    data: [1000.0, 0.0, 960.0, -100.0,
+           0.0, 1000.0, 540.0, 0.0,
+           0.0, 0.0, 1.0, 0.0]

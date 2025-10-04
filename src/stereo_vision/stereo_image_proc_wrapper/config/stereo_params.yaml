@@ -1,0 +1,88 @@
+/**:
+  ros__parameters:
+    # Disparity Node Parameters
+    # These parameters control the stereo matching algorithm
+    
+    # Stereo matching algorithm: block_matching or semi_global_block_matching (SGBM)
+    stereo_algorithm: 1  # 0 = Block Matching, 1 = Semi-Global Block Matching (SGBM)
+    
+    # Minimum disparity value
+    # The minimum possible disparity value. Normally 0.
+    min_disparity: 0
+    
+    # Number of disparity levels
+    # The disparity search range. Must be divisible by 16.
+    # Typical values: 64, 128, 256
+    disparity_range: 128
+    
+    # Correlation window size (odd number)
+    # The linear size of the blocks compared by the stereo matcher.
+    # Larger values produce smoother disparity images but less detail.
+    # Typical values: 5, 7, 9, 11, 15, 21
+    correlation_window_size: 15
+    
+    # Uniqueness ratio (%)
+    # The margin by which the best computed cost function value should "win"
+    # over the second best value to consider the match correct.
+    # Typical values: 5-15
+    # Higher values mean more reliable but sparser disparity maps.
+    uniqueness_ratio: 10
+    
+    # Texture threshold
+    # Filters out areas that don't have enough texture for reliable matching.
+    # Typical values: 10-100
+    texture_threshold: 10
+    
+    # Speckle filter parameters
+    # Post-processing to remove small "speckles" in the disparity image
+    
+    # Speckle size
+    # Maximum size of smooth disparity regions considered noise speckles.
+    # Set to 0 to disable speckle filtering.
+    # Typical values: 50-200
+    speckle_size: 100
+    
+    # Speckle range
+    # Maximum disparity variation within each connected component.
+    # Typical values: 1-2 (in disparity levels)
+    speckle_range: 4
+    
+    # Pre-filter parameters (for Block Matching)
+    
+    # Pre-filter cap
+    # Truncation value for the prefiltered image pixels.
+    # Typical values: 1-63
+    prefilter_cap: 31
+    
+    # Pre-filter size
+    # The averaging window size for the prefilter.
+    # Must be an odd number.
+    # Typical values: 5, 9, 13
+    prefilter_size: 9
+    
+    # Additional SGBM parameters
+    
+    # P1, P2 - Penalty parameters
+    # These control the smoothness of the disparity map.
+    # P1: penalty for disparity change of 1 between neighbors
+    # P2: penalty for larger disparity changes
+    # Typical: P2 > P1, often P2 = 4*P1
+    # If set to 0, they will be auto-calculated based on correlation_window_size
+    # P1: 8 * channels * correlation_window_size^2
+    # P2: 32 * channels * correlation_window_size^2
+    
+    # Disparity refinement
+    # Full-resolution disparity maps (subpixel interpolation)
+    # 0 = no refinement, 1 = full refinement
+    full_dp: false
+    
+    # Point Cloud Node Parameters
+    
+    # Use color information in point cloud
+    use_color: true
+    
+    # Approximate sync for image messages
+    approximate_sync: true
+    
+    # Queue size for message synchronization
+    queue_size: 5

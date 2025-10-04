@@ -1,0 +1,23 @@
+# Stereo Distance Estimator Configuration
+
+stereo_distance_estimator:
+  ros__parameters:
+    # Topic names
+    target2d_topic: "/filter/target2d_array"
+    disparity_topic: "/stereo/disparity"
+    pointcloud_topic: "/stereo/points2"
+    target3d_topic: "/stereo/target3d_array_raw"
+    
+    # Algorithm settings
+    use_pointcloud: true  # true: use point cloud, false: use disparity map
+    queue_size: 10
+    max_distance: 10.0  # meters
+    min_distance: 0.1   # meters
+    
+    # Camera intrinsics (only used when use_pointcloud=false)
+    # Update these values according to your camera calibration
+    fx: 600.0      # focal length x (pixels)
+    fy: 600.0      # focal length y (pixels)
+    cx: 320.0      # principal point x (pixels)
+    cy: 240.0      # principal point y (pixels)
+    baseline: 0.12 # stereo baseline distance (meters)
