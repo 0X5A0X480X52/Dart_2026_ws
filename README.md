@@ -55,3 +55,28 @@ sudo apt install libopencv-dev
 ```bash
 sudo apt install ros-humble-image-pipeline
 ```
+
+## 构建并运行
+
+```bash
+colcon build --symlink-install
+source install/setup.bash
+ros2 launch rm_bringup bringup.launch.py
+```
+
+## 使用 `foxglove` 可视化
+
+下载安装 foxglove_bridge：
+
+```bash
+sudo apt install ros-$ROS_DISTRO-foxglove-bridge
+```
+
+启动 foxglove_bridge：
+
+```bash
+source install/setup.bash
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml
+```
+
+启动后可使用 foxglove_bridge 相应接收终端进行可视化调试

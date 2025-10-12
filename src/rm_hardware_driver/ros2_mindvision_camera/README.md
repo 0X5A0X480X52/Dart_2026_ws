@@ -18,18 +18,18 @@ Only tested under Ubuntu 22.04 with ROS2 Humble
 
 To build from source, clone the latest version from this repository into your colcon workspace and compile the package using
 
-	mkdir -p ros_ws/src
-	cd ros_ws/src
-	git clone https://github.com/chenjunnn/ros2_mindvision_camera.git
-	cd ..
-	rosdep install --from-paths src --ignore-src -r -y
-	colcon build --symlink-install --packages-up-to mindvision_camera
+ mkdir -p ros_ws/src
+ cd ros_ws/src
+ git clone <https://github.com/chenjunnn/ros2_mindvision_camera.git>
+ cd ..
+ rosdep install --from-paths src --ignore-src -r -y
+ colcon build --symlink-install --packages-up-to mindvision_camera
 
 ### 标定
 
-标定教程可参考 https://navigation.ros.org/tutorials/docs/camera_calibration.html
+标定教程可参考 <https://navigation.ros.org/tutorials/docs/camera_calibration.html>
 
-参数意义请参考 http://wiki.ros.org/camera_calibration
+参数意义请参考 <http://wiki.ros.org/camera_calibration>
 
 标定后的相机参数会被存放在 `/tmp/calibrationdata.tar.gz`
 
@@ -41,19 +41,21 @@ To build from source, clone the latest version from this repository into your co
 
 支持的参数：
 
-1. params_file： 相机参数文件的路径 
+1. params_file： 相机参数文件的路径
 2. camera_info_url： 相机内参文件的路径
 3. use_sensor_data_qos： 相机 Publisher 是否使用 SensorDataQoS (default: `false`)
 
 #### 多相机模式
 
-**1. 查看所有连接的相机信息和序列号**
+**1. 查看所有连接的相机信息和序列号**:
 
-    ros2 launch mindvision_camera list_cameras_launch.py
+```bash
+ros2 launch mindvision_camera list_cameras_launch.py
+```
 
 这将列出所有检测到的相机及其序列号（SN）。
 
-**2. 配置多相机参数**
+**2. 配置多相机参数**：
 
 编辑 `config/dual_camera_params.yaml` 文件，为每个相机指定序列号：
 
@@ -71,9 +73,11 @@ To build from source, clone the latest version from this repository into your co
     ...
 ```
 
-**3. 启动多个相机**
+**3. 启动多个相机**：
 
-    ros2 launch mindvision_camera dual_camera_launch.py
+```bash
+ros2 launch mindvision_camera dual_camera_launch.py
+```
 
 这将同时启动两个相机节点，分别在 `/camera_left` 和 `/camera_right` 命名空间下。
 
@@ -87,4 +91,4 @@ To build from source, clone the latest version from this repository into your co
 
 打开 rqt，在 Plugins 中添加 `Configuration -> Dynamic Reconfigure` 及 `Visualization -> Image View`
 
-![](docs/rqt.png)
+<!-- ![](docs/rqt.png) -->

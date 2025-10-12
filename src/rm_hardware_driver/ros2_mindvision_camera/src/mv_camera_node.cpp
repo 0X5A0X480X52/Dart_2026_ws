@@ -93,6 +93,9 @@ public:
     // 设置手动曝光
     CameraSetAeState(h_camera_, false);
 
+    // 设置连续采集模式 (0=连续采集, 1=软件触发, 2=硬件触发)
+    CameraSetTriggerMode(h_camera_, 0);
+
     // Declare camera parameters
     declareParameters();
 
@@ -249,6 +252,40 @@ private:
     CameraSetGamma(h_camera_, gamma);
     RCLCPP_INFO(this->get_logger(), "Gamma = %d", gamma);
 
+    // Frame Rate (帧率控制)
+    // 优先尝试使用 CameraSetFrameRate (网口相机支持)
+    // 如果不支持，则回退到 CameraSetFrameSpeed (USB相机支持)
+    param_desc.description = "Frame rate in Hz (<=0 for maximum, recommend 10-30 for dual cameras)";
+    param_desc.integer_range[0].from_value = 0;
+    param_desc.integer_range[0].to_value = 200;
+    int frame_rate = this->declare_parameter("frame_rate", 10, param_desc);
+    
+    int status_fr = CameraSetFrameRate(h_camera_, frame_rate);
+    if (status_fr == CAMERA_STATUS_SUCCESS) {
+      RCLCPP_INFO(this->get_logger(), "Frame rate = %d fps", frame_rate);
+    } else if (status_fr == -4) {  // CAMERA_STATUS_NOT_SUPPORTED
+      // 网口相机的帧率设置不支持，尝试使用帧速度模式（USB相机）
+      RCLCPP_INFO(this->get_logger(), "CameraSetFrameRate not supported, using CameraSetFrameSpeed instead");
+      
+      // Frame Speed (帧速度模式): 0=Low, 1=Normal, 2=High, 3=Super
+      // 对于双相机场景，建议使用 Low 模式以降低USB带宽
+      param_desc.description = "Frame speed mode (0=Low, 1=Normal, 2=High, 3=Super)";
+      param_desc.integer_range[0].from_value = 0;
+      param_desc.integer_range[0].to_value = t_capability_.iFrameSpeedDesc - 1;
+      int frame_speed = this->declare_parameter("frame_speed", 0, param_desc);  // 默认Low模式
+      
+      int status_fs = CameraSetFrameSpeed(h_camera_, frame_speed);
+      if (status_fs == CAMERA_STATUS_SUCCESS) {
+        const char* speed_names[] = {"Low", "Normal", "High", "Super"};
+        RCLCPP_INFO(this->get_logger(), "Frame speed = %d (%s)", frame_speed,
+                    frame_speed < 4 ? speed_names[frame_speed] : "Unknown");
+      } else {
+        RCLCPP_WARN(this->get_logger(), "Failed to set frame speed, status = %d", status_fs);
+      }
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Failed to set frame rate, status = %d", status_fr);
+    }
+
     // Flip
     flip_image_ = this->declare_parameter("flip_image", false);
   }
@@ -304,6 +341,26 @@ private:
         if (status != CAMERA_STATUS_SUCCESS) {
           result.successful = false;
           result.reason = "Failed to set Gamma, status = " + std::to_string(status);
+        }
+      } else if (param.get_name() == "frame_rate") {
+        int frame_rate = param.as_int();
+        int status = CameraSetFrameRate(h_camera_, frame_rate);
+        if (status != CAMERA_STATUS_SUCCESS) {
+          result.successful = false;
+          result.reason = "Failed to set frame rate, status = " + std::to_string(status);
+        } else {
+          RCLCPP_INFO(this->get_logger(), "Frame rate changed to %d fps", frame_rate);
+        }
+      } else if (param.get_name() == "frame_speed") {
+        int frame_speed = param.as_int();
+        int status = CameraSetFrameSpeed(h_camera_, frame_speed);
+        if (status != CAMERA_STATUS_SUCCESS) {
+          result.successful = false;
+          result.reason = "Failed to set frame speed, status = " + std::to_string(status);
+        } else {
+          const char* speed_names[] = {"Low", "Normal", "High", "Super"};
+          RCLCPP_INFO(this->get_logger(), "Frame speed changed to %d (%s)", frame_speed,
+                      frame_speed < 4 ? speed_names[frame_speed] : "Unknown");
         }
       } else if (param.get_name() == "flip_image") {
         flip_image_ = param.as_bool();

@@ -2,7 +2,7 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, TimerAction
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
@@ -44,17 +44,22 @@ def generate_launch_description():
             }],
         ),
         
-        # 右相机节点
-        Node(
-            package='mindvision_camera',
-            executable='mindvision_camera_node',
-            name='mv_camera',
-            namespace='camera_right',
-            output='screen',
-            emulate_tty=True,
-            parameters=[LaunchConfiguration('params_file'), {
-                'camera_info_url': camera_info_url_right,
-                'use_sensor_data_qos': LaunchConfiguration('use_sensor_data_qos'),
-            }],
+        # 右相机节点 - 延迟2秒启动以避免USB带宽冲突
+        TimerAction(
+            period=2.0,
+            actions=[
+                Node(
+                    package='mindvision_camera',
+                    executable='mindvision_camera_node',
+                    name='mv_camera',
+                    namespace='camera_right',
+                    output='screen',
+                    emulate_tty=True,
+                    parameters=[LaunchConfiguration('params_file'), {
+                        'camera_info_url': camera_info_url_right,
+                        'use_sensor_data_qos': LaunchConfiguration('use_sensor_data_qos'),
+                    }],
+                )
+            ]
         )
     ])
