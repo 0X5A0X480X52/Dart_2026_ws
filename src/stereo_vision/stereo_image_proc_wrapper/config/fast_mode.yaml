@@ -23,10 +23,10 @@
     approximate_sync: true
     queue_size: 5
     
-  # Topic names (can be overridden via launch arguments)
-  left_image_topic: '/camera/left/image_rect'
-  right_image_topic: '/camera/right/image_rect'
-  left_camera_info_topic: '/camera/left/camera_info'
-  right_camera_info_topic: '/camera/right/camera_info'
-  disparity_topic: '/stereo/disparity'
-  points_topic: '/stereo/points2'
+    # Topic names (can be overridden via launch arguments)
+    left_image_topic: '/camera_left/image_raw'
+    right_image_topic: '/camera_right/image_raw'
+    left_camera_info_topic: '/camera_left/camera_info'
+    right_camera_info_topic: '/camera_right/camera_info'
+    disparity_topic: '/stereo/disparity'
+    points_topic: '/stereo/points2'
