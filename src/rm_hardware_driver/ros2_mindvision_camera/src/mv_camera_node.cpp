@@ -13,6 +13,7 @@
 #include <sensor_msgs/msg/image.hpp>
 
 // C++ system
+#include <cstring>
 #include <memory>
 #include <string>
 #include <thread>
@@ -302,18 +303,29 @@ private:
     // 如果用户指定了分辨率（非0），则设置分辨率
     if (image_width_ > 0 && image_height_ > 0) {
       tSdkImageResolution resolution;
-      // 获取当前分辨率作为基础
-      CameraGetImageResolution(h_camera_, &resolution);
+      memset(&resolution, 0, sizeof(tSdkImageResolution));
       
       // 设置用户指定的宽度和高度
+      resolution.iIndex = 0xFF;  // 自定义分辨率
       resolution.iWidth = image_width_;
       resolution.iHeight = image_height_;
       resolution.iWidthFOV = image_width_;
       resolution.iHeightFOV = image_height_;
+      resolution.iHOffsetFOV = 0;
+      resolution.iVOffsetFOV = 0;
+      resolution.iWidthZoomSw = 0;
+      resolution.iHeightZoomSw = 0;
       
       int status_res = CameraSetImageResolution(h_camera_, &resolution);
       if (status_res == CAMERA_STATUS_SUCCESS) {
         RCLCPP_INFO(this->get_logger(), "Image resolution set to %dx%d", image_width_, image_height_);
+        
+        // 验证设置是否生效
+        tSdkImageResolution current_res;
+        CameraGetImageResolution(h_camera_, &current_res);
+        RCLCPP_INFO(this->get_logger(), "Current resolution: %dx%d (FOV: %dx%d)", 
+                    current_res.iWidth, current_res.iHeight,
+                    current_res.iWidthFOV, current_res.iHeightFOV);
       } else {
         RCLCPP_WARN(this->get_logger(), "Failed to set image resolution to %dx%d, status = %d. Using camera default.",
                     image_width_, image_height_, status_res);
@@ -405,11 +417,16 @@ private:
         // 只有当宽度和高度都非0时才设置分辨率
         if (image_width_ > 0 && image_height_ > 0) {
           tSdkImageResolution resolution;
-          CameraGetImageResolution(h_camera_, &resolution);
+          memset(&resolution, 0, sizeof(tSdkImageResolution));
+          resolution.iIndex = 0xFF;  // 自定义分辨率
           resolution.iWidth = image_width_;
           resolution.iHeight = image_height_;
           resolution.iWidthFOV = image_width_;
           resolution.iHeightFOV = image_height_;
+          resolution.iHOffsetFOV = 0;
+          resolution.iVOffsetFOV = 0;
+          resolution.iWidthZoomSw = 0;
+          resolution.iHeightZoomSw = 0;
           
           int status = CameraSetImageResolution(h_camera_, &resolution);
           if (status != CAMERA_STATUS_SUCCESS) {
@@ -424,11 +441,16 @@ private:
         // 只有当宽度和高度都非0时才设置分辨率
         if (image_width_ > 0 && image_height_ > 0) {
           tSdkImageResolution resolution;
-          CameraGetImageResolution(h_camera_, &resolution);
+          memset(&resolution, 0, sizeof(tSdkImageResolution));
+          resolution.iIndex = 0xFF;  // 自定义分辨率
           resolution.iWidth = image_width_;
           resolution.iHeight = image_height_;
           resolution.iWidthFOV = image_width_;
           resolution.iHeightFOV = image_height_;
+          resolution.iHOffsetFOV = 0;
+          resolution.iVOffsetFOV = 0;
+          resolution.iWidthZoomSw = 0;
+          resolution.iHeightZoomSw = 0;
           
           int status = CameraSetImageResolution(h_camera_, &resolution);
           if (status != CAMERA_STATUS_SUCCESS) {
