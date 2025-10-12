@@ -45,12 +45,10 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 )
 
 # HIKVision SDK library path
-set(HIK_SDK_DIR "/opt/MVS" CACHE PATH "Path to HIKVision SDK")
+set(HIK_SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/hiksdk CACHE PATH "Path to HIKVision SDK")
 
 if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
   target_link_directories(${PROJECT_NAME} PUBLIC ${HIK_SDK_DIR}/lib/64)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64")
-  target_link_directories(${PROJECT_NAME} PUBLIC ${HIK_SDK_DIR}/lib/aarch64)
 else()
   message(FATAL_ERROR "Unsupported host system architecture: ${CMAKE_SYSTEM_PROCESSOR}!")
 endif()
