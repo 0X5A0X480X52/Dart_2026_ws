@@ -8,6 +8,10 @@
       camera_sn: "041170020075"  # 左相机序列号
       camera_info_url: "package://mindvision_camera/config/dual_01/left_camera_info.yaml"
       
+      # 图像分辨率设置（设置为0则使用相机默认分辨率）
+      image_width: 0   # 图像宽度，0表示使用相机默认值
+      image_height: 0  # 图像高度，0表示使用相机默认值
+      
       exposure_time: 3500
       analog_gain: 64
       # 帧率控制 (网口相机使用 frame_rate, USB相机会自动回退到 frame_speed)
@@ -27,6 +31,10 @@
       camera_name: camera_right
       camera_sn: "042081320100"  # 右相机序列号
       camera_info_url: "package://mindvision_camera/config/dual_01/right_camera_info.yaml"
+      
+      # 图像分辨率设置（设置为0则使用相机默认分辨率）
+      image_width: 0   # 图像宽度，0表示使用相机默认值
+      image_height: 0  # 图像高度，0表示使用相机默认值
       
       exposure_time: 3500
       analog_gain: 64

@@ -156,15 +156,42 @@ ros2 param set /hik_camera gain 10.0
 ros2 param set /hik_camera frame_rate 30.0
 ```
 
+实时调整图像分辨率：
+
+```bash
+# 设置为1920x1080
+ros2 param set /hik_camera image_width 1920
+ros2 param set /hik_camera image_height 1080
+
+# 设置为1280x720
+ros2 param set /hik_camera image_width 1280
+ros2 param set /hik_camera image_height 720
+
+# 注意：必须同时设置width和height，且都为非零值才会生效
+```
+
 ## 配置文件
 
 ### camera_params.yaml
 
 相机运行参数配置文件，包括：
-- `exposure_time`: 曝光时间（微秒）
-- `gain`: 增益值（0~16）
-- `frame_rate`: 帧率（fps）
-- `flip_image`: 是否翻转图像
+
+| 参数名 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `camera_name` | string | "hik_camera" | 相机名称 |
+| `camera_sn` | string | "" | 相机序列号（空为自动检测第一个相机） |
+| `image_width` | int | 0 | 图像宽度（0表示使用相机默认分辨率） |
+| `image_height` | int | 0 | 图像高度（0表示使用相机默认分辨率） |
+| `exposure_time` | double | 5000.0 | 曝光时间（微秒） |
+| `gain` | double | 8.0 | 增益值（0~16） |
+| `frame_rate` | double | 30.0 | 帧率（fps） |
+| `flip_image` | bool | false | 是否翻转图像 |
+
+**分辨率设置说明：**
+- 当 `image_width` 和 `image_height` 都设置为0时，使用相机默认分辨率
+- 只有当两个参数都非零时，才会设置分辨率
+- 设置的分辨率不能超过相机支持的最大分辨率
+- 可以通过动态参数在运行时调整分辨率
 
 ### camera_info.yaml
 

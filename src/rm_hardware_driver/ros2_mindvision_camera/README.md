@@ -87,6 +87,40 @@ ros2 launch mindvision_camera dual_camera_launch.py
 - 每个相机必须指定唯一的序列号以避免冲突
 - 可以通过修改 launch 文件添加更多相机节点
 
+## 可配置参数
+
+以下参数可以在配置文件（如 `config/camera_params.yaml`）中设置，也可以通过 ROS2 参数服务器动态修改：
+
+| 参数名 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `camera_name` | string | `mv_camera` | 相机名称 |
+| `camera_sn` | string | `""` | 相机序列号（留空使用第一个检测到的相机） |
+| `image_width` | int | `0` | 图像宽度（0表示使用相机默认分辨率） |
+| `image_height` | int | `0` | 图像高度（0表示使用相机默认分辨率） |
+| `exposure_time` | int | `5000` | 曝光时间（微秒） |
+| `analog_gain` | int | - | 模拟增益 |
+| `rgb_gain.r` | int | - | 红色通道增益 |
+| `rgb_gain.g` | int | - | 绿色通道增益 |
+| `rgb_gain.b` | int | - | 蓝色通道增益 |
+| `saturation` | int | - | 饱和度 |
+| `gamma` | int | - | 伽马值 |
+| `frame_rate` | int | `10` | 帧率（fps，网口相机支持） |
+| `frame_speed` | int | `0` | 帧速度模式（USB相机：0=Low, 1=Normal, 2=High, 3=Super） |
+| `flip_image` | bool | `false` | 是否翻转图像 |
+
+**分辨率设置说明**：
+- 必须同时设置 `image_width` 和 `image_height` 为非零值才会生效
+- 如果设置为 0（默认），则使用相机的默认分辨率
+- 支持的分辨率范围取决于具体相机型号
+- 可以通过 ROS2 参数服务器动态修改分辨率
+
+示例：设置 1920x1080 分辨率
+```yaml
+ros__parameters:
+  image_width: 1920
+  image_height: 1080
+```
+
 ### 通过 rqt 动态调节相机参数
 
 打开 rqt，在 Plugins 中添加 `Configuration -> Dynamic Reconfigure` 及 `Visualization -> Image View`

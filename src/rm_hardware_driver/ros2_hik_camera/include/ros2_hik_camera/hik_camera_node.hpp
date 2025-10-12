@@ -73,6 +73,8 @@ private:
   
   // Parameters
   bool flip_image_;
+  int image_width_;
+  int image_height_;
   int fail_count_ = 0;
 
   // Parameter callback handle

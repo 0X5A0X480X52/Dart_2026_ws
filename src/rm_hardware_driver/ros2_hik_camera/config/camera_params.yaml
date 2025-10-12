@@ -3,6 +3,11 @@
     camera_name: hik_camera
     camera_sn: ""  # 留空则使用第一个检测到的相机，或者填入序列号指定特定相机
 
+    # Image resolution (图像分辨率)
+    # Set to 0 to use camera default resolution (设置为0则使用相机默认分辨率)
+    image_width: 0         # Image width, 0 for camera default (图像宽度，0表示使用默认)
+    image_height: 0        # Image height, 0 for camera default (图像高度，0表示使用默认)
+    
     # Camera parameters
     # NOTE: frame_rate设置说明：
     # - 低帧率 (10fps): 稳定，适合调试，避免MV_E_NODATA错误

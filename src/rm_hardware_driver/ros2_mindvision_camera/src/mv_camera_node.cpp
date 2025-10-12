@@ -286,6 +286,43 @@ private:
       RCLCPP_WARN(this->get_logger(), "Failed to set frame rate, status = %d", status_fr);
     }
 
+    // Image Resolution (图像分辨率)
+    // 0 表示使用相机默认分辨率，不进行设置
+    param_desc.description = "Image width (0 for camera default)";
+    param_desc.integer_range[0].from_value = 0;
+    param_desc.integer_range[0].to_value = t_capability_.sResolutionRange.iWidthMax;
+    image_width_ = this->declare_parameter("image_width", 0, param_desc);
+    
+    param_desc.description = "Image height (0 for camera default)";
+    param_desc.integer_range[0].from_value = 0;
+    param_desc.integer_range[0].to_value = t_capability_.sResolutionRange.iHeightMax;
+    image_height_ = this->declare_parameter("image_height", 0, param_desc);
+    
+    // 如果用户指定了分辨率（非0），则设置分辨率
+    if (image_width_ > 0 && image_height_ > 0) {
+      tSdkImageResolution resolution;
+      // 获取当前分辨率作为基础
+      CameraGetImageResolution(h_camera_, &resolution);
+      
+      // 设置用户指定的宽度和高度
+      resolution.iWidth = image_width_;
+      resolution.iHeight = image_height_;
+      resolution.iWidthFOV = image_width_;
+      resolution.iHeightFOV = image_height_;
+      
+      int status_res = CameraSetImageResolution(h_camera_, &resolution);
+      if (status_res == CAMERA_STATUS_SUCCESS) {
+        RCLCPP_INFO(this->get_logger(), "Image resolution set to %dx%d", image_width_, image_height_);
+      } else {
+        RCLCPP_WARN(this->get_logger(), "Failed to set image resolution to %dx%d, status = %d. Using camera default.",
+                    image_width_, image_height_, status_res);
+      }
+    } else if (image_width_ > 0 || image_height_ > 0) {
+      RCLCPP_WARN(this->get_logger(), "Both image_width and image_height must be set (non-zero) to change resolution. Using camera default.");
+    } else {
+      RCLCPP_INFO(this->get_logger(), "Using camera default resolution");
+    }
+
     // Flip
     flip_image_ = this->declare_parameter("flip_image", false);
   }
@@ -362,6 +399,44 @@ private:
           RCLCPP_INFO(this->get_logger(), "Frame speed changed to %d (%s)", frame_speed,
                       frame_speed < 4 ? speed_names[frame_speed] : "Unknown");
         }
+      } else if (param.get_name() == "image_width") {
+        image_width_ = param.as_int();
+        // 只有当宽度和高度都非0时才设置分辨率
+        if (image_width_ > 0 && image_height_ > 0) {
+          tSdkImageResolution resolution;
+          CameraGetImageResolution(h_camera_, &resolution);
+          resolution.iWidth = image_width_;
+          resolution.iHeight = image_height_;
+          resolution.iWidthFOV = image_width_;
+          resolution.iHeightFOV = image_height_;
+          
+          int status = CameraSetImageResolution(h_camera_, &resolution);
+          if (status != CAMERA_STATUS_SUCCESS) {
+            result.successful = false;
+            result.reason = "Failed to set image resolution, status = " + std::to_string(status);
+          } else {
+            RCLCPP_INFO(this->get_logger(), "Image resolution changed to %dx%d", image_width_, image_height_);
+          }
+        }
+      } else if (param.get_name() == "image_height") {
+        image_height_ = param.as_int();
+        // 只有当宽度和高度都非0时才设置分辨率
+        if (image_width_ > 0 && image_height_ > 0) {
+          tSdkImageResolution resolution;
+          CameraGetImageResolution(h_camera_, &resolution);
+          resolution.iWidth = image_width_;
+          resolution.iHeight = image_height_;
+          resolution.iWidthFOV = image_width_;
+          resolution.iHeightFOV = image_height_;
+          
+          int status = CameraSetImageResolution(h_camera_, &resolution);
+          if (status != CAMERA_STATUS_SUCCESS) {
+            result.successful = false;
+            result.reason = "Failed to set image resolution, status = " + std::to_string(status);
+          } else {
+            RCLCPP_INFO(this->get_logger(), "Image resolution changed to %dx%d", image_width_, image_height_);
+          }
+        }
       } else if (param.get_name() == "flip_image") {
         flip_image_ = param.as_bool();
       } else {
@@ -386,6 +461,9 @@ private:
 
   // RGB Gain
   int r_gain_, g_gain_, b_gain_;
+
+  // Image Resolution
+  int image_width_, image_height_;
 
   bool flip_image_;
 

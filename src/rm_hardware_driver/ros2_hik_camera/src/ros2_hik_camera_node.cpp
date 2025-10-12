@@ -410,6 +410,47 @@ void HikCameraNode::declareParameters()
   // Flip image
   flip_image_ = this->declare_parameter("flip_image", false);
   RCLCPP_INFO(this->get_logger(), "Flip image = %s", flip_image_ ? "true" : "false");
+
+  // Image resolution
+  param_desc.description = "Image width (0 for camera default)";
+  image_width_ = this->declare_parameter("image_width", 0, param_desc);
+  param_desc.description = "Image height (0 for camera default)";
+  image_height_ = this->declare_parameter("image_height", 0, param_desc);
+
+  // Set resolution if both width and height are non-zero
+  if (image_width_ > 0 && image_height_ > 0) {
+    MVCC_INTVALUE stWidthMax = {0};
+    MVCC_INTVALUE stHeightMax = {0};
+    status = MV_CC_GetIntValue(camera_handle_, "WidthMax", &stWidthMax);
+    if (status == MV_OK) {
+      status = MV_CC_GetIntValue(camera_handle_, "HeightMax", &stHeightMax);
+    }
+    
+    if (status == MV_OK) {
+      if (image_width_ <= static_cast<int>(stWidthMax.nCurValue) && 
+          image_height_ <= static_cast<int>(stHeightMax.nCurValue)) {
+        status = MV_CC_SetIntValue(camera_handle_, "Width", image_width_);
+        if (status == MV_OK) {
+          status = MV_CC_SetIntValue(camera_handle_, "Height", image_height_);
+        }
+        
+        if (status == MV_OK) {
+          RCLCPP_INFO(this->get_logger(), "Resolution set to %dx%d", image_width_, image_height_);
+        } else {
+          RCLCPP_WARN(this->get_logger(), "Failed to set resolution, status = 0x%x", status);
+        }
+      } else {
+        RCLCPP_WARN(this->get_logger(), 
+          "Requested resolution %dx%d exceeds camera capability %dx%d, using camera default",
+          image_width_, image_height_, 
+          static_cast<int>(stWidthMax.nCurValue), static_cast<int>(stHeightMax.nCurValue));
+      }
+    } else {
+      RCLCPP_WARN(this->get_logger(), "Failed to get camera resolution capability, status = 0x%x", status);
+    }
+  } else {
+    RCLCPP_INFO(this->get_logger(), "Using camera default resolution");
+  }
 }
 
 rcl_interfaces::msg::SetParametersResult HikCameraNode::parametersCallback(
@@ -439,6 +480,32 @@ rcl_interfaces::msg::SetParametersResult HikCameraNode::parametersCallback(
       }
     } else if (param.get_name() == "flip_image") {
       flip_image_ = param.as_bool();
+    } else if (param.get_name() == "image_width") {
+      image_width_ = param.as_int();
+      // Apply resolution only if both width and height are non-zero
+      if (image_width_ > 0 && image_height_ > 0) {
+        int status = MV_CC_SetIntValue(camera_handle_, "Width", image_width_);
+        if (status == MV_OK) {
+          status = MV_CC_SetIntValue(camera_handle_, "Height", image_height_);
+        }
+        if (status != MV_OK) {
+          result.successful = false;
+          result.reason = "Failed to set resolution, status = " + std::to_string(status);
+        }
+      }
+    } else if (param.get_name() == "image_height") {
+      image_height_ = param.as_int();
+      // Apply resolution only if both width and height are non-zero
+      if (image_width_ > 0 && image_height_ > 0) {
+        int status = MV_CC_SetIntValue(camera_handle_, "Width", image_width_);
+        if (status == MV_OK) {
+          status = MV_CC_SetIntValue(camera_handle_, "Height", image_height_);
+        }
+        if (status != MV_OK) {
+          result.successful = false;
+          result.reason = "Failed to set resolution, status = " + std::to_string(status);
+        }
+      }
     } else {
       result.successful = false;
       result.reason = "Unknown parameter: " + param.get_name();
