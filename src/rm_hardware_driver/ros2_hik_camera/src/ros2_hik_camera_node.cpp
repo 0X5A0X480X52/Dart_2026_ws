@@ -429,6 +429,11 @@ void HikCameraNode::declareParameters()
     if (status == MV_OK) {
       if (image_width_ <= static_cast<int>(stWidthMax.nCurValue) && 
           image_height_ <= static_cast<int>(stHeightMax.nCurValue)) {
+        // Set offset to 0 first to ensure ROI starts from top-left corner
+        MV_CC_SetIntValue(camera_handle_, "OffsetX", 0);
+        MV_CC_SetIntValue(camera_handle_, "OffsetY", 0);
+        
+        // Set width and height
         status = MV_CC_SetIntValue(camera_handle_, "Width", image_width_);
         if (status == MV_OK) {
           status = MV_CC_SetIntValue(camera_handle_, "Height", image_height_);
@@ -484,6 +489,10 @@ rcl_interfaces::msg::SetParametersResult HikCameraNode::parametersCallback(
       image_width_ = param.as_int();
       // Apply resolution only if both width and height are non-zero
       if (image_width_ > 0 && image_height_ > 0) {
+        // Set offset to 0 first
+        MV_CC_SetIntValue(camera_handle_, "OffsetX", 0);
+        MV_CC_SetIntValue(camera_handle_, "OffsetY", 0);
+        
         int status = MV_CC_SetIntValue(camera_handle_, "Width", image_width_);
         if (status == MV_OK) {
           status = MV_CC_SetIntValue(camera_handle_, "Height", image_height_);
@@ -497,6 +506,10 @@ rcl_interfaces::msg::SetParametersResult HikCameraNode::parametersCallback(
       image_height_ = param.as_int();
       // Apply resolution only if both width and height are non-zero
       if (image_width_ > 0 && image_height_ > 0) {
+        // Set offset to 0 first
+        MV_CC_SetIntValue(camera_handle_, "OffsetX", 0);
+        MV_CC_SetIntValue(camera_handle_, "OffsetY", 0);
+        
         int status = MV_CC_SetIntValue(camera_handle_, "Width", image_width_);
         if (status == MV_OK) {
           status = MV_CC_SetIntValue(camera_handle_, "Height", image_height_);

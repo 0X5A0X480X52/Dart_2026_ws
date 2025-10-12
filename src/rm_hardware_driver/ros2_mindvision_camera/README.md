@@ -33,6 +33,24 @@ To build from source, clone the latest version from this repository into your co
 
 标定后的相机参数会被存放在 `/tmp/calibrationdata.tar.gz`
 
+#### 双目相机标定
+
+1. 启动双目相机节点
+
+  ```bash
+  ros2 launch mindvision_camera dual_camera_launch.py
+  ```
+
+2. 启动标定工具
+
+  ```bash
+  ros2 run camera_calibration cameracalibrator \
+      --size 11x8 --square 0.01 \
+      --approximate 0.1 \
+      right:=/camera_left/image_raw left:=/camera_right/image_raw \
+      left_camera:=/camera_left right_camera:=/camera_right stereo:=true
+  ```
+
 ### 启动相机节点
 
 #### 单相机模式

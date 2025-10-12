@@ -96,15 +96,16 @@ public:
     // 设置连续采集模式 (0=连续采集, 1=软件触发, 2=硬件触发)
     CameraSetTriggerMode(h_camera_, 0);
 
-    // Declare camera parameters
+    // 设置输出格式 (必须在 CameraPlay 之前设置)
+    CameraSetIspOutFormat(h_camera_, CAMERA_MEDIA_TYPE_RGB8);
+
+    // Declare camera parameters (包括分辨率设置)
     declareParameters();
 
     // 让SDK进入工作模式，开始接收来自相机发送的图像
     // 数据。如果当前相机是触发模式，则需要接收到
     // 触发帧以后才会更新图像。
     CameraPlay(h_camera_);
-
-    CameraSetIspOutFormat(h_camera_, CAMERA_MEDIA_TYPE_RGB8);
 
     // Create camera publisher
     // rqt_image_view can't subscribe image msg with sensor_data QoS

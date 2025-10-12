@@ -191,6 +191,7 @@ ros2 param set /hik_camera image_height 720
 - 当 `image_width` 和 `image_height` 都设置为0时，使用相机默认分辨率
 - 只有当两个参数都非零时，才会设置分辨率
 - 设置的分辨率不能超过相机支持的最大分辨率
+- 设置分辨率时会自动将 OffsetX 和 OffsetY 重置为 0（ROI 从左上角开始）
 - 可以通过动态参数在运行时调整分辨率
 
 ### camera_info.yaml
