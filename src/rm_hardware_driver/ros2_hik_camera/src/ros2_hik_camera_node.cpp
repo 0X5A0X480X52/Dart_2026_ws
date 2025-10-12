@@ -24,6 +24,23 @@ HikCameraNode::HikCameraNode(const rclcpp::NodeOptions & options)
     return;
   }
 
+  // 打印所有检测到的相机信息
+  for (unsigned int i = 0; i < device_list_.nDeviceNum; i++) {
+    MV_CC_DEVICE_INFO* dev_info = device_list_.pDeviceInfo[i];
+    std::string camera_name = "Unknown";
+    std::string serial_number = "Unknown";
+    
+    if (dev_info->nTLayerType == MV_GIGE_DEVICE) {
+      camera_name = std::string(reinterpret_cast<char*>(dev_info->SpecialInfo.stGigEInfo.chModelName));
+      serial_number = std::string(reinterpret_cast<char*>(dev_info->SpecialInfo.stGigEInfo.chSerialNumber));
+    } else if (dev_info->nTLayerType == MV_USB_DEVICE) {
+      camera_name = std::string(reinterpret_cast<char*>(dev_info->SpecialInfo.stUsb3VInfo.chModelName));
+      serial_number = std::string(reinterpret_cast<char*>(dev_info->SpecialInfo.stUsb3VInfo.chSerialNumber));
+    }
+    
+    RCLCPP_INFO(this->get_logger(), "Camera %d: %s (SN: %s)", i, camera_name.c_str(), serial_number.c_str());
+  }
+
   // Initialize camera
   if (!initCamera()) {
     RCLCPP_ERROR(this->get_logger(), "Failed to initialize camera!");
@@ -209,11 +226,51 @@ HikCameraNode::~HikCameraNode()
 
 bool HikCameraNode::initCamera()
 {
-  // Select first device
-  MV_CC_DEVICE_INFO * device_info = device_list_.pDeviceInfo[0];
+  // 获取序列号参数（如果指定）
+  std::string camera_sn = this->declare_parameter("camera_sn", "");
+  
+  // 选择要初始化的相机
+  MV_CC_DEVICE_INFO * selected_device = nullptr;
+  
+  if (camera_sn.empty()) {
+    // 如果没有指定序列号，使用第一个相机
+    selected_device = device_list_.pDeviceInfo[0];
+    
+    std::string sn = "Unknown";
+    if (selected_device->nTLayerType == MV_GIGE_DEVICE) {
+      sn = std::string(reinterpret_cast<char*>(selected_device->SpecialInfo.stGigEInfo.chSerialNumber));
+    } else if (selected_device->nTLayerType == MV_USB_DEVICE) {
+      sn = std::string(reinterpret_cast<char*>(selected_device->SpecialInfo.stUsb3VInfo.chSerialNumber));
+    }
+    
+    RCLCPP_INFO(this->get_logger(), "No camera_sn specified, using first camera (SN: %s)", sn.c_str());
+  } else {
+    // 根据序列号查找相机
+    for (unsigned int i = 0; i < device_list_.nDeviceNum; i++) {
+      MV_CC_DEVICE_INFO* dev_info = device_list_.pDeviceInfo[i];
+      std::string sn = "Unknown";
+      
+      if (dev_info->nTLayerType == MV_GIGE_DEVICE) {
+        sn = std::string(reinterpret_cast<char*>(dev_info->SpecialInfo.stGigEInfo.chSerialNumber));
+      } else if (dev_info->nTLayerType == MV_USB_DEVICE) {
+        sn = std::string(reinterpret_cast<char*>(dev_info->SpecialInfo.stUsb3VInfo.chSerialNumber));
+      }
+      
+      if (sn == camera_sn) {
+        selected_device = dev_info;
+        RCLCPP_INFO(this->get_logger(), "Found camera with SN: %s", camera_sn.c_str());
+        break;
+      }
+    }
+    
+    if (selected_device == nullptr) {
+      RCLCPP_ERROR(this->get_logger(), "Camera with SN '%s' not found!", camera_sn.c_str());
+      return false;
+    }
+  }
   
   // Create handle
-  int status = MV_CC_CreateHandle(&camera_handle_, device_info);
+  int status = MV_CC_CreateHandle(&camera_handle_, selected_device);
   if (status != MV_OK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to create handle, status = %d", status);
     return false;

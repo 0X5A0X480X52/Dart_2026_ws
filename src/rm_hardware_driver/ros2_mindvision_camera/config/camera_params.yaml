@@ -1,6 +1,7 @@
 /mv_camera:
   ros__parameters:
     camera_name: mv_camera
+    camera_sn: ""  # 留空则使用第一个检测到的相机，或者填入序列号指定特定相机
 
     exposure_time: 3500
     gain: 6.0

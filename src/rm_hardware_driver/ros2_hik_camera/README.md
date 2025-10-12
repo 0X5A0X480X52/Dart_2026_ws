@@ -60,16 +60,67 @@ source install/setup.bash
 
 ### 启动相机节点
 
+#### 单相机模式
+
 ```bash
 ros2 launch ros2_hik_camera hik_camera_launch.py
 ```
+
+#### 多相机模式
+
+**1. 查看所有连接的相机信息和序列号**
+
+```bash
+ros2 launch ros2_hik_camera list_cameras_launch.py
+```
+
+这将列出所有检测到的相机及其序列号（SN）。
+
+**2. 配置多相机参数**
+
+编辑 `config/dual_camera_params.yaml` 文件，为每个相机指定序列号：
+
+```yaml
+/camera_left:
+  ros__parameters:
+    camera_name: camera_left
+    camera_sn: "YOUR_LEFT_CAMERA_SN"  # 替换为实际序列号
+    ...
+
+/camera_right:
+  ros__parameters:
+    camera_name: camera_right
+    camera_sn: "YOUR_RIGHT_CAMERA_SN"  # 替换为实际序列号
+    ...
+```
+
+**3. 启动多个相机**
+
+```bash
+ros2 launch ros2_hik_camera dual_camera_launch.py
+```
+
+这将同时启动两个相机节点，分别在 `/camera_left` 和 `/camera_right` 命名空间下。
+
+**注意事项：**
+
+- `camera_sn` 参数留空时，节点将使用第一个检测到的相机
+- 每个相机必须指定唯一的序列号以避免冲突
+- 可以通过修改 launch 文件添加更多相机节点
 
 ### 查看图像
 
 使用rqt_image_view查看图像：
 
 ```bash
+# 单相机模式
 ros2 run rqt_image_view rqt_image_view
+
+# 多相机模式 - 查看左相机
+rqt_image_view /camera_left/image_raw
+
+# 多相机模式 - 查看右相机
+rqt_image_view /camera_right/image_raw
 ```
 
 或使用rviz2：
@@ -78,14 +129,19 @@ ros2 run rqt_image_view rqt_image_view
 rviz2
 ```
 
-在rviz2中添加Image显示，订阅 `/image_raw` 话题。
+在rviz2中添加Image显示，订阅相应的话题。
 
 ### 动态参数调整
 
 实时调整曝光时间：
 
 ```bash
+# 单相机模式
 ros2 param set /hik_camera exposure_time 5000.0
+
+# 多相机模式
+ros2 param set /camera_left/hik_camera exposure_time 5000.0
+ros2 param set /camera_right/hik_camera exposure_time 5000.0
 ```
 
 实时调整增益：

@@ -32,10 +32,10 @@ public:
     CameraSdkInit(1);
 
     // 枚举设备，并建立设备列表
-    int i_camera_counts = 1;
+    int i_camera_counts = 10;  // 最多支持10个相机
     int i_status = -1;
-    tSdkCameraDevInfo t_camera_enum_list;
-    i_status = CameraEnumerateDevice(&t_camera_enum_list, &i_camera_counts);
+    tSdkCameraDevInfo t_camera_enum_list[10];
+    i_status = CameraEnumerateDevice(t_camera_enum_list, &i_camera_counts);
     RCLCPP_INFO(this->get_logger(), "Enumerate state = %d", i_status);
     RCLCPP_INFO(this->get_logger(), "Found camera count = %d", i_camera_counts);
 
@@ -45,8 +45,36 @@ public:
       return;
     }
 
+    // 获取序列号参数（如果指定）
+    std::string camera_sn = this->declare_parameter("camera_sn", "");
+    
+    // 选择要初始化的相机
+    tSdkCameraDevInfo* selected_camera = nullptr;
+    if (camera_sn.empty()) {
+      // 如果没有指定序列号，使用第一个相机
+      selected_camera = &t_camera_enum_list[0];
+      RCLCPP_INFO(this->get_logger(), "No camera_sn specified, using first camera: %s (SN: %s)", 
+                  selected_camera->acFriendlyName, selected_camera->acSn);
+    } else {
+      // 根据序列号查找相机
+      for (int i = 0; i < i_camera_counts; i++) {
+        RCLCPP_INFO(this->get_logger(), "Camera %d: %s (SN: %s)", 
+                    i, t_camera_enum_list[i].acFriendlyName, t_camera_enum_list[i].acSn);
+        if (std::string(t_camera_enum_list[i].acSn) == camera_sn) {
+          selected_camera = &t_camera_enum_list[i];
+          RCLCPP_INFO(this->get_logger(), "Found camera with SN: %s", camera_sn.c_str());
+          break;
+        }
+      }
+      
+      if (selected_camera == nullptr) {
+        RCLCPP_ERROR(this->get_logger(), "Camera with SN '%s' not found!", camera_sn.c_str());
+        return;
+      }
+    }
+
     // 相机初始化。初始化成功后，才能调用任何其他相机相关的操作接口
-    i_status = CameraInit(&t_camera_enum_list, -1, -1, &h_camera_);
+    i_status = CameraInit(selected_camera, -1, -1, &h_camera_);
 
     // 初始化失败
     RCLCPP_INFO(this->get_logger(), "Init state = %d", i_status);
