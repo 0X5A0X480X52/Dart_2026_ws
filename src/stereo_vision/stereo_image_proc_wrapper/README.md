@@ -39,6 +39,24 @@ sudo apt install ros-humble-stereo-image-proc ros-humble-image-proc
 
 **注意**: 该包需要**已经校正过的图像**作为输入。如果你的相机输出的是原始图像，需要先使用 `image_proc` 进行图像校正。
 
+配置说明：话题名现在可以在配置文件中指定（`config/*.yaml`）。添加了以下可配置参数到 `ros__parameters`：
+
+- `left_image_topic` (string) - 左相机校正后图像的 topic，默认 `/camera/left/image_rect`
+- `right_image_topic` (string) - 右相机校正后图像的 topic，默认 `/camera/right/image_rect`
+- `left_camera_info_topic` (string) - 左相机 camera_info topic，默认 `/camera/left/camera_info`
+- `right_camera_info_topic` (string) - 右相机 camera_info topic，默认 `/camera/right/camera_info`
+- `disparity_topic` (string) - 输出视差图 topic，默认 `/stereo/disparity`
+- `points_topic` (string) - 输出点云 topic，默认 `/stereo/points2`
+
+这些参数在 `config/stereo_params.yaml`、`config/fast_mode.yaml`、`config/high_quality.yaml` 中已有默认值。你也可以在启动时通过 launch 参数覆盖，例如：
+
+```bash
+ros2 launch stereo_image_proc_wrapper stereo_image_proc.launch.py \
+  left_image_topic:=/my_cam/left/image_rect \
+  right_image_topic:=/my_cam/right/image_rect \
+  disparity_topic:=/my_stereo/disparity
+```
+
 ### 发布 (Published Topics)
 
 | Topic | 类型 | 描述 |
