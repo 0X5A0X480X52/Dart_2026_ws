@@ -1,0 +1,14 @@
+# 示例配置: 自定义宽高比缩放
+# Example: Custom aspect ratio scaling
+
+resize_node:
+  ros__parameters:
+    scale_width: 0.75
+    scale_height: 0.5
+    interpolation: 1  # LINEAR
+    
+    # 话题名称使用默认值（可以被 launch 文件覆盖）
+    input_image_topic: "image"
+    input_camera_info_topic: "camera_info"
+    output_image_topic: "resized/image"
+    output_camera_info_topic: "resized/camera_info"

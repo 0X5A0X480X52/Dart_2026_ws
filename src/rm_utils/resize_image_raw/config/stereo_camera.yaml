@@ -1,0 +1,15 @@
+# 双目相机立体视觉配置示例
+# Stereo camera configuration example
+
+resize_node:
+  ros__parameters:
+    # 缩放参数
+    scale_width: 0.5
+    scale_height: 0.5
+    interpolation: 3  # AREA
+    
+    # 话题名称 - 立体相机
+    input_image_topic: "/stereo/left/image_raw"
+    input_camera_info_topic: "/stereo/left/camera_info"
+    output_image_topic: "/stereo/left/resized/image_raw"
+    output_camera_info_topic: "/stereo/left/resized/camera_info"

@@ -1,0 +1,14 @@
+# 示例配置: 快速处理（最近邻插值）
+# Example: Fast processing with nearest neighbor interpolation
+
+resize_node:
+  ros__parameters:
+    scale_width: 0.5
+    scale_height: 0.5
+    interpolation: 0  # NEAREST - 最快速度
+    
+    # 话题名称使用默认值（可以被 launch 文件覆盖）
+    input_image_topic: "image"
+    input_camera_info_topic: "camera_info"
+    output_image_topic: "resized/image"
+    output_camera_info_topic: "resized/camera_info"

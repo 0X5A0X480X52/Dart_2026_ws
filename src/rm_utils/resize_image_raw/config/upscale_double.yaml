@@ -1,0 +1,14 @@
+# 示例配置: 高质量放大到两倍
+# Example: High quality upscale to double size
+
+resize_node:
+  ros__parameters:
+    scale_width: 2.0
+    scale_height: 2.0
+    interpolation: 2  # CUBIC - 最适合放大图像
+    
+    # 话题名称使用默认值（可以被 launch 文件覆盖）
+    input_image_topic: "image"
+    input_camera_info_topic: "camera_info"
+    output_image_topic: "resized/image"
+    output_camera_info_topic: "resized/camera_info"

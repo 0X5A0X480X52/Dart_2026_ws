@@ -1,0 +1,26 @@
+# Resize Image Node Configuration
+# 图像缩放节点配置文件
+
+resize_node:
+  ros__parameters:
+    # 缩放比例 (Scale factors)
+    # 范围: > 0.0
+    # 默认: 1.0 (不缩放)
+    scale_width: 0.5
+    scale_height: 0.5
+    
+    # 插值方法 (Interpolation method)
+    # 0: NEAREST - 最近邻插值 (最快，质量较低)
+    # 1: LINEAR  - 线性插值 (默认，速度和质量平衡)
+    # 2: CUBIC   - 三次插值 (较慢，质量较高)
+    # 3: AREA    - 区域插值 (适合缩小图像)
+    interpolation: 1
+    
+    # 话题名称配置 (Topic names configuration)
+    # 输入话题 (Input topics)
+    input_image_topic: "image"
+    input_camera_info_topic: "camera_info"
+    
+    # 输出话题 (Output topics)
+    output_image_topic: "resized/image"
+    output_camera_info_topic: "resized/camera_info"
