@@ -56,6 +56,9 @@ private:
   // Store latest camera info
   sensor_msgs::msg::CameraInfo::ConstSharedPtr latest_camera_info_;
   bool camera_info_received_;
+
+  // One-shot timer for deferred initialization
+  rclcpp::TimerBase::SharedPtr init_timer_;
 };
 
 }  // namespace resize_image_raw
