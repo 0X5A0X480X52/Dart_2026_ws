@@ -49,10 +49,19 @@ ResizeNode::ResizeNode(const rclcpp::NodeOptions & options)
     RCLCPP_ERROR(this->get_logger(), "Scale factors must be positive!");
     throw std::invalid_argument("Invalid scale factors");
   }
+
+  // Auto-initialize for composable node usage
+  // This makes the node work both as a component and standalone
+  initialize();
 }
 
 void ResizeNode::initialize()
 {
+  // Skip if already initialized
+  if (it_ != nullptr) {
+    return;
+  }
+
   // Initialize image transport (must be called after shared_from_this() is safe)
   it_ = std::make_shared<image_transport::ImageTransport>(shared_from_this());
 
@@ -191,3 +200,6 @@ sensor_msgs::msg::CameraInfo ResizeNode::scaleCameraInfo(
 }
 
 }  // namespace resize_image_raw
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(resize_image_raw::ResizeNode)

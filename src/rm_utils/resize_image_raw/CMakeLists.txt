@@ -13,6 +13,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(image_transport REQUIRED)
@@ -31,11 +32,15 @@ add_library(${PROJECT_NAME} SHARED
 
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
+  rclcpp_components
   sensor_msgs
   cv_bridge
   image_transport
   OpenCV
 )
+
+# Register component
+rclcpp_components_register_nodes(${PROJECT_NAME} "resize_image_raw::ResizeNode")
 
 # Create executable
 add_executable(resize_node_exe
