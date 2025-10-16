@@ -50,9 +50,24 @@ ResizeNode::ResizeNode(const rclcpp::NodeOptions & options)
     throw std::invalid_argument("Invalid scale factors");
   }
 
-  // Auto-initialize for composable node usage
-  // This makes the node work both as a component and standalone
-  initialize();
+  // Check if we should auto-initialize (for composable nodes)
+  // Composable nodes set use_intra_process_comms in options
+  bool auto_initialize = options.use_intra_process_comms();
+  
+  if (auto_initialize) {
+    // For composable nodes, use a one-shot timer to defer initialization
+    // until after the constructor completes and shared_from_this() is safe
+    RCLCPP_INFO(this->get_logger(), "Composable node mode detected, auto-initializing");
+    auto timer = this->create_wall_timer(
+      std::chrono::milliseconds(0),
+      [this]() {
+        initialize();
+      }
+    );
+  } else {
+    // For standalone nodes, initialization will be called manually from main()
+    RCLCPP_INFO(this->get_logger(), "Standalone node mode, call initialize() manually");
+  }
 }
 
 void ResizeNode::initialize()
