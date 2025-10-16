@@ -18,6 +18,9 @@ class ResizeNode : public rclcpp::Node
 {
 public:
   explicit ResizeNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
+  
+  // Initialize subscribers and publishers (called after construction)
+  void initialize();
 
 private:
   void imageCallback(const sensor_msgs::msg::Image::ConstSharedPtr & image_msg);

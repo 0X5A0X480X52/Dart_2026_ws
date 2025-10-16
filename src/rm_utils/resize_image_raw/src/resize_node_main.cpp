@@ -7,6 +7,9 @@ int main(int argc, char * argv[])
   
   auto node = std::make_shared<resize_image_raw::ResizeNode>();
   
+  // Initialize subscribers and publishers after node is fully constructed
+  node->initialize();
+  
   rclcpp::spin(node);
   
   rclcpp::shutdown();

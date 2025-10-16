@@ -49,8 +49,11 @@ ResizeNode::ResizeNode(const rclcpp::NodeOptions & options)
     RCLCPP_ERROR(this->get_logger(), "Scale factors must be positive!");
     throw std::invalid_argument("Invalid scale factors");
   }
+}
 
-  // Initialize image transport
+void ResizeNode::initialize()
+{
+  // Initialize image transport (must be called after shared_from_this() is safe)
   it_ = std::make_shared<image_transport::ImageTransport>(shared_from_this());
 
   // Create subscribers with configured topic names
