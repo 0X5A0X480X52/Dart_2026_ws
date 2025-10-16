@@ -8,11 +8,9 @@
 #include <rm_interfaces/msg/target2_d_array.hpp>
 #include <rm_interfaces/msg/target3_d_array.hpp>
 #include <rm_interfaces/msg/target3_d.hpp>
-#include <message_filters/subscriber.h>
-#include <message_filters/synchronizer.h>
-#include <message_filters/sync_policies/approximate_time.h>
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
+#include <mutex>
 
 namespace stereo_distance_estimator
 {
@@ -23,11 +21,10 @@ public:
   explicit StereoDistanceEstimatorNode(const rclcpp::NodeOptions & options);
 
 private:
-  // 回调函数：同步处理 Target2DArray、Disparity 和 PointCloud2
-  void syncCallback(
-    const rm_interfaces::msg::Target2DArray::ConstSharedPtr & targets_msg,
-    const sensor_msgs::msg::Image::ConstSharedPtr & disparity_msg,
-    const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_msg);
+  // 回调函数
+  void target2dCallback(const rm_interfaces::msg::Target2DArray::ConstSharedPtr & msg);
+  void disparityCallback(const sensor_msgs::msg::Image::ConstSharedPtr & msg);
+  void pointcloudCallback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg);
 
   // 从点云中获取指定像素的3D坐标
   bool get3DPointFromCloud(
@@ -45,19 +42,18 @@ private:
   float calculateDistance(const geometry_msgs::msg::Point & point);
 
   // 订阅器
-  message_filters::Subscriber<rm_interfaces::msg::Target2DArray> target2d_sub_;
-  message_filters::Subscriber<sensor_msgs::msg::Image> disparity_sub_;
-  message_filters::Subscriber<sensor_msgs::msg::PointCloud2> pointcloud_sub_;
-
-  // 同步器
-  using SyncPolicy = message_filters::sync_policies::ApproximateTime<
-    rm_interfaces::msg::Target2DArray,
-    sensor_msgs::msg::Image,
-    sensor_msgs::msg::PointCloud2>;
-  std::shared_ptr<message_filters::Synchronizer<SyncPolicy>> sync_;
+  rclcpp::Subscription<rm_interfaces::msg::Target2DArray>::SharedPtr target2d_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr disparity_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud_sub_;
 
   // 发布器
   rclcpp::Publisher<rm_interfaces::msg::Target3DArray>::SharedPtr target3d_pub_;
+
+  // 缓存最新的消息
+  sensor_msgs::msg::Image::ConstSharedPtr latest_disparity_;
+  sensor_msgs::msg::PointCloud2::ConstSharedPtr latest_pointcloud_;
+  std::mutex disparity_mutex_;
+  std::mutex pointcloud_mutex_;
 
   // 参数
   std::string target2d_topic_;

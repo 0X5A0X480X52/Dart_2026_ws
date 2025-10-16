@@ -8,7 +8,7 @@ StereoDistanceEstimatorNode::StereoDistanceEstimatorNode(const rclcpp::NodeOptio
 : Node("stereo_distance_estimator", options)
 {
   // 声明并获取参数
-  this->declare_parameter("target2d_topic", "/filter/target2d_array");
+  this->declare_parameter("target2d_topic", "/detector/target2d_array");
   this->declare_parameter("disparity_topic", "/stereo/disparity");
   this->declare_parameter("pointcloud_topic", "/stereo/points2");
   this->declare_parameter("target3d_topic", "/stereo/target3d_array_raw");
@@ -39,17 +39,18 @@ StereoDistanceEstimatorNode::StereoDistanceEstimatorNode(const rclcpp::NodeOptio
   cy_ = this->get_parameter("cy").as_double();
   baseline_ = this->get_parameter("baseline").as_double();
 
-  // 创建订阅器
-  target2d_sub_.subscribe(this, target2d_topic_);
-  disparity_sub_.subscribe(this, disparity_topic_);
-  pointcloud_sub_.subscribe(this, pointcloud_topic_);
-
-  // 创建同步器
-  sync_ = std::make_shared<message_filters::Synchronizer<SyncPolicy>>(
-    SyncPolicy(queue_size_), target2d_sub_, disparity_sub_, pointcloud_sub_);
-  sync_->registerCallback(
-    std::bind(&StereoDistanceEstimatorNode::syncCallback, this,
-              std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+  // 创建订阅器 - 使用普通订阅，不再使用 message_filters
+  target2d_sub_ = this->create_subscription<rm_interfaces::msg::Target2DArray>(
+    target2d_topic_, queue_size_,
+    std::bind(&StereoDistanceEstimatorNode::target2dCallback, this, std::placeholders::_1));
+  
+  disparity_sub_ = this->create_subscription<sensor_msgs::msg::Image>(
+    disparity_topic_, queue_size_,
+    std::bind(&StereoDistanceEstimatorNode::disparityCallback, this, std::placeholders::_1));
+  
+  pointcloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+    pointcloud_topic_, queue_size_,
+    std::bind(&StereoDistanceEstimatorNode::pointcloudCallback, this, std::placeholders::_1));
 
   // 创建发布器
   target3d_pub_ = this->create_publisher<rm_interfaces::msg::Target3DArray>(
@@ -64,20 +65,56 @@ StereoDistanceEstimatorNode::StereoDistanceEstimatorNode(const rclcpp::NodeOptio
   RCLCPP_INFO(this->get_logger(), "  Use pointcloud: %s", use_pointcloud_ ? "true" : "false");
 }
 
-void StereoDistanceEstimatorNode::syncCallback(
-  const rm_interfaces::msg::Target2DArray::ConstSharedPtr & targets_msg,
-  const sensor_msgs::msg::Image::ConstSharedPtr & disparity_msg,
-  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_msg)
+void StereoDistanceEstimatorNode::disparityCallback(
+  const sensor_msgs::msg::Image::ConstSharedPtr & msg)
 {
-  if (targets_msg->targets.empty()) {
-    RCLCPP_DEBUG(this->get_logger(), "No 2D targets received");
-    return;
-  }
+  std::lock_guard<std::mutex> lock(disparity_mutex_);
+  latest_disparity_ = msg;
+  RCLCPP_DEBUG(this->get_logger(), "Received disparity image");
+}
 
+void StereoDistanceEstimatorNode::pointcloudCallback(
+  const sensor_msgs::msg::PointCloud2::ConstSharedPtr & msg)
+{
+  std::lock_guard<std::mutex> lock(pointcloud_mutex_);
+  latest_pointcloud_ = msg;
+  RCLCPP_DEBUG(this->get_logger(), "Received pointcloud");
+}
+
+void StereoDistanceEstimatorNode::target2dCallback(
+  const rm_interfaces::msg::Target2DArray::ConstSharedPtr & targets_msg)
+{
+  RCLCPP_INFO(this->get_logger(), 
+    "Received %zu 2D targets", targets_msg->targets.size());
+  
   // 创建输出消息
   auto target3d_array = rm_interfaces::msg::Target3DArray();
   target3d_array.header = targets_msg->header;
   target3d_array.header.frame_id = "camera_link";  // 可配置
+
+  // 获取最新的disparity或pointcloud
+  sensor_msgs::msg::Image::ConstSharedPtr disparity_msg;
+  sensor_msgs::msg::PointCloud2::ConstSharedPtr cloud_msg;
+  
+  if (use_pointcloud_) {
+    std::lock_guard<std::mutex> lock(pointcloud_mutex_);
+    cloud_msg = latest_pointcloud_;
+    if (!cloud_msg) {
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+        "No pointcloud data available yet, publishing empty result");
+      target3d_pub_->publish(target3d_array);
+      return;
+    }
+  } else {
+    std::lock_guard<std::mutex> lock(disparity_mutex_);
+    disparity_msg = latest_disparity_;
+    if (!disparity_msg) {
+      RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 1000,
+        "No disparity data available yet, publishing empty result");
+      target3d_pub_->publish(target3d_array);
+      return;
+    }
+  }
 
   // 遍历每个2D目标
   for (const auto & target2d : targets_msg->targets) {
@@ -123,11 +160,11 @@ void StereoDistanceEstimatorNode::syncCallback(
     }
   }
 
-  // 发布结果
+  // 发布结果（即使targets为空也会发布）
   target3d_pub_->publish(target3d_array);
   
-  RCLCPP_DEBUG(this->get_logger(), 
-    "Processed %zu 2D targets -> %zu 3D targets", 
+  RCLCPP_INFO(this->get_logger(), 
+    "Published: %zu 2D targets -> %zu 3D targets", 
     targets_msg->targets.size(), target3d_array.targets.size());
 }
 
