@@ -87,6 +87,13 @@
     # Queue size for message synchronization
     queue_size: 5
     
+    # Image resize parameters
+    # Scale factor for input images before stereo matching
+    # Smaller values reduce computation but also reduce accuracy
+    # Typical values: 0.25, 0.5, 0.75, 1.0 (no scaling)
+    # Set to 1.0 to disable image resizing
+    image_scale: 0.5
+    
     # Topic names (can be overridden via launch arguments)
     left_image_topic: '/camera_left/image_raw'
     right_image_topic: '/camera_right/image_raw'

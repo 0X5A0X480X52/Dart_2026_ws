@@ -55,6 +55,7 @@ def generate_launch_description():
     right_info_default = ros_params.get('right_camera_info_topic', '/camera/right/camera_info')
     disparity_default = ros_params.get('disparity_topic', '/stereo/disparity')
     points_default = ros_params.get('points_topic', '/stereo/points2')
+    image_scale_default = ros_params.get('image_scale', 1.0)
     
     print("Default config path:", default_config_path)
     print("- Left image topic default:", left_image_default)
@@ -63,6 +64,7 @@ def generate_launch_description():
     print("- Right camera info topic default:", right_info_default)
     print("- Disparity topic default:", disparity_default)
     print("- Points topic default:", points_default)
+    print("- Image scale default:", image_scale_default)
 
     # Declare launch arguments
     config_file_arg = DeclareLaunchArgument(
@@ -114,6 +116,11 @@ def generate_launch_description():
         description='Topic name for output point cloud (PointCloud2)'
     )
 
+    image_scale_arg = DeclareLaunchArgument(
+        'image_scale', default_value=str(image_scale_default),
+        description='Scale factor for input images (0.0-1.0, 1.0 = no scaling)'
+    )
+
     # Get launch configuration substitutions
     config_file = LaunchConfiguration('config_file')
     namespace = LaunchConfiguration('namespace')
@@ -125,6 +132,7 @@ def generate_launch_description():
     right_info = LaunchConfiguration('right_camera_info_topic')
     disparity = LaunchConfiguration('disparity_topic')
     points = LaunchConfiguration('points_topic')
+    image_scale = LaunchConfiguration('image_scale')
 
     # Create composable node container for better performance
     stereo_container = ComposableNodeContainer(
@@ -133,6 +141,40 @@ def generate_launch_description():
         package='rclcpp_components',
         executable='component_container',
         composable_node_descriptions=[
+            # Resize node for left camera - scales down images before stereo matching
+            ComposableNode(
+                package='image_proc',
+                plugin='image_proc::ResizeNode',
+                name='resize_left',
+                parameters=[{
+                    'scale_height': image_scale,
+                    'scale_width': image_scale,
+                    'use_scale': True,
+                }],
+                remappings=[
+                    ('image', left_image),
+                    ('camera_info', left_info),
+                    ('resize', '/stereo/left/image_resized'),
+                    ('resize/camera_info', '/stereo/left/camera_info_resized'),
+                ],
+            ),
+            # Resize node for right camera - scales down images before stereo matching
+            ComposableNode(
+                package='image_proc',
+                plugin='image_proc::ResizeNode',
+                name='resize_right',
+                parameters=[{
+                    'scale_height': image_scale,
+                    'scale_width': image_scale,
+                    'use_scale': True,
+                }],
+                remappings=[
+                    ('image', right_image),
+                    ('camera_info', right_info),
+                    ('resize', '/stereo/right/image_resized'),
+                    ('resize/camera_info', '/stereo/right/camera_info_resized'),
+                ],
+            ),
             # Disparity node - computes disparity from rectified stereo pair
             ComposableNode(
                 package='stereo_image_proc',
@@ -140,10 +182,10 @@ def generate_launch_description():
                 name='disparity_node',
                 parameters=[config_file],
                 remappings=[
-                    ('left/image_rect', left_image),
-                    ('left/camera_info', left_info),
-                    ('right/image_rect', right_image),
-                    ('right/camera_info', right_info),
+                    ('left/image_rect', '/stereo/left/image_resized'),
+                    ('left/camera_info', '/stereo/left/camera_info_resized'),
+                    ('right/image_rect', '/stereo/right/image_resized'),
+                    ('right/camera_info', '/stereo/right/camera_info_resized'),
                     ('disparity', disparity),
                 ],
             ),
@@ -154,9 +196,9 @@ def generate_launch_description():
                 name='point_cloud_node',
                 parameters=[config_file],
                 remappings=[
-                    ('left/camera_info', left_info),
-                    ('right/camera_info', right_info),
-                    ('left/image_rect_color', left_image),
+                    ('left/camera_info', '/stereo/left/camera_info_resized'),
+                    ('right/camera_info', '/stereo/right/camera_info_resized'),
+                    ('left/image_rect_color', '/stereo/left/image_resized'),
                     ('disparity', disparity),
                     ('points2', points),
                 ],
@@ -175,5 +217,6 @@ def generate_launch_description():
         right_info_arg,
         disparity_arg,
         points_arg,
+        image_scale_arg,
         stereo_container,
     ])

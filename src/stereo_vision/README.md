@@ -1,6 +1,6 @@
 # Stereo Vision 目录结构
 
-```
+```bash
 stereo_vision/
 ├── README.md                        # 本文件：总体说明
 ├── COMPARISON.md                    # stereo_processor vs stereo_image_proc_wrapper 对比
@@ -52,6 +52,7 @@ stereo_vision/
 **功能**: 集成相机驱动和图像校正
 
 **特点**:
+
 - 支持海康威视（HIK）和迈德威视（MindVision）相机
 - 使用 ROS2 官方 `image_proc` 进行图像校正
 - 消除镜头畸变和立体校正
@@ -60,7 +61,8 @@ stereo_vision/
 **输入**: 原始图像 + 相机标定信息
 **输出**: 校正后的图像
 
-**使用场景**: 
+**使用场景**:
+
 - 作为立体视觉流程的第一步
 - 与 `stereo_image_proc_wrapper` 配合使用
 - 为任何需要无畸变图像的应用提供输入
@@ -70,6 +72,7 @@ stereo_vision/
 **功能**: 自定义 OpenCV 实现的完整立体视觉处理
 
 **特点**:
+
 - 包含图像校正、视差计算、点云生成全流程
 - 基于 OpenCV 自己封装实现
 - 自包含，不依赖外部 ROS2 图像处理包
@@ -79,6 +82,7 @@ stereo_vision/
 **输出**: 校正图像 + 视差图 + 点云
 
 **使用场景**:
+
 - 学习立体视觉算法原理
 - 需要自定义算法实现
 - 研究和开发
@@ -88,6 +92,7 @@ stereo_vision/
 **功能**: 基于 ROS2 官方库的立体视觉处理
 
 **特点**:
+
 - 使用 ROS2 官方维护的 `stereo_image_proc`
 - 高性能，使用组合节点容器
 - 稳定可靠，经过社区广泛测试
@@ -97,6 +102,7 @@ stereo_vision/
 **输出**: 视差图 + 点云
 
 **使用场景**:
+
 - 生产环境部署
 - 需要高性能和稳定性
 - 标准 ROS2 应用
@@ -105,7 +111,7 @@ stereo_vision/
 
 ### 推荐流程（使用官方库）
 
-```
+```bash
 相机驱动 (HIK/MindVision)
     ↓
 stereo_rectifier (图像校正)
@@ -127,7 +133,7 @@ ros2 launch stereo_image_proc_wrapper stereo_image_proc.launch.py
 
 ### 备选流程（使用自定义实现）
 
-```
+```bash
 相机驱动
     ↓
 stereo_processor (图像校正 + 视差计算 + 点云生成)
@@ -164,6 +170,7 @@ ros2 run camera_calibration cameracalibrator \
 ```
 
 将标定文件保存到：
+
 - `stereo_rectifier/config/left_camera_info.yaml`
 - `stereo_rectifier/config/right_camera_info.yaml`
 
@@ -221,9 +228,10 @@ ros2 run rqt_image_view rqt_image_view /stereo/disparity
 ## 文件说明
 
 ### stereo_rectifier 包文件
-   - 完整管道的启动文件模板
-   - 可以扩展添加相机驱动等
-   - 目前包含对 stereo_image_proc.launch.py 的引用
+
+- 完整管道的启动文件模板
+- 可以扩展添加相机驱动等
+- 目前包含对 stereo_image_proc.launch.py 的引用
 
 #### 文档文件
 
@@ -282,6 +290,7 @@ ros2 run rqt_image_view rqt_image_view /stereo/disparity
 ### 性能考虑
 
 `stereo_image_proc_wrapper` 的优势：
+
 - ✅ 使用零拷贝传输减少内存开销
 - ✅ 官方优化的算法实现
 - ✅ 组合节点减少通信开销
@@ -290,6 +299,7 @@ ros2 run rqt_image_view rqt_image_view /stereo/disparity
 ### 集成建议
 
 如果你的系统需要：
+
 1. **原始图像 → 点云**: 需要添加 `image_proc` 节点进行图像校正
 2. **已校正图像 → 点云**: 直接使用 `stereo_image_proc_wrapper`
 3. **自定义处理**: 可以继承和扩展这些节点
@@ -340,6 +350,7 @@ rviz2
 ## 下一步计划
 
 可以考虑的扩展：
+
 1. 添加相机驱动集成示例
 2. 添加标定工具集成
 3. 添加性能基准测试
