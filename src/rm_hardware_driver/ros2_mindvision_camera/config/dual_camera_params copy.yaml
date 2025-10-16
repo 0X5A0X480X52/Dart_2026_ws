@@ -6,11 +6,11 @@
     ros__parameters:
       camera_name: camera_left
       camera_sn: "041170020075"  # 左相机序列号
-      camera_info_url: "package://mindvision_camera/config/dual_02/left_camera_info.yaml"
+      camera_info_url: "package://mindvision_camera/config/dual_01/left_camera_info.yaml"
       
       # 图像分辨率设置（设置为0则使用相机默认分辨率）
-      image_width: 640   # 图像宽度，0表示使用相机默认值
-      image_height: 480  # 图像高度，0表示使用相机默认值
+      image_width: 0   # 图像宽度，0表示使用相机默认值
+      image_height: 0  # 图像高度，0表示使用相机默认值
       
       exposure_time: 3500
       analog_gain: 64

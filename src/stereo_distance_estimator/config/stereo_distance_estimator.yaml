@@ -3,7 +3,7 @@
 stereo_distance_estimator:
   ros__parameters:
     # Topic names
-    target2d_topic: "/filter/target2d_array"
+    target2d_topic: "/detector/target2d_array"
     disparity_topic: "/stereo/disparity"
     pointcloud_topic: "/stereo/points2"
     target3d_topic: "/stereo/target3d_array_raw"

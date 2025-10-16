@@ -14,6 +14,16 @@ def generate_launch_description():
     - Stereo image processing pipeline
     """
     
+    dual_camera_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([
+            PathJoinSubstitution([
+                FindPackageShare('mindvision_camera'),
+                'launch',
+                'dual_camera_launch.py'
+            ])
+        ]),
+    )
+    
     # Launch stereo_image_proc
     stereo_proc_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
@@ -26,5 +36,6 @@ def generate_launch_description():
     )
     
     return LaunchDescription([
+        dual_camera_launch,
         stereo_proc_launch,
     ])

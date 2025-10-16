@@ -10,12 +10,12 @@ object_detection_openvino_node:
     nms_threshold: 0.4
     
     # Model file paths (update these paths according to your setup)
-    xml_path: "/home/amatrix/Dart_2026_ws/src/object_detection_openvino/config/openvino/Katrin.xml"
-    bin_path: "/home/amatrix/Dart_2026_ws/src/object_detection_openvino/config/openvino/Katrin.bin"
+    xml_path: "./src/object_detection_openvino/config/openvino/Katrin.xml"
+    bin_path: "./src/object_detection_openvino/config/openvino/Katrin.bin"
     device: "CPU"  # Options: CPU, GPU, MYRIAD, etc.
     
     # Topic names
-    image_topic: "/image_raw" # the topic subscribed to publish camera image  e.g., "/camera/image_raw"
+    image_topic: "/camera_left/image_raw" # the topic subscribed to publish camera image  e.g., "/camera/image_raw"
     detection_topic: "/detector/target2d_array" # the topic to publish detection results
     debug_image_topic: "/detector/debug_image" # the topic to publish debug visualization image
     

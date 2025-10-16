@@ -8,7 +8,7 @@
     disparity_range: 64  # Smaller range for faster processing
     correlation_window_size: 21  # Larger for smoother but faster results
     
-    uniqueness_ratio: 5
+    uniqueness_ratio: 5.0
     texture_threshold: 10
     
     speckle_size: 50

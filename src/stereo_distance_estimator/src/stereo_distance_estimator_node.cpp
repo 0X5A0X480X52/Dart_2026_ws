@@ -69,6 +69,11 @@ void StereoDistanceEstimatorNode::syncCallback(
   const sensor_msgs::msg::Image::ConstSharedPtr & disparity_msg,
   const sensor_msgs::msg::PointCloud2::ConstSharedPtr & cloud_msg)
 {
+  if (targets_msg->targets.empty()) {
+    RCLCPP_DEBUG(this->get_logger(), "No 2D targets received");
+    return;
+  }
+
   // 创建输出消息
   auto target3d_array = rm_interfaces::msg::Target3DArray();
   target3d_array.header = targets_msg->header;
