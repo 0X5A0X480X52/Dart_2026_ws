@@ -142,38 +142,36 @@ def generate_launch_description():
         executable='component_container',
         composable_node_descriptions=[
             # Resize node for left camera - scales down images before stereo matching
+            # Using custom resize_image_raw implementation
             ComposableNode(
-                package='image_proc',
-                plugin='image_proc::ResizeNode',
+                package='resize_image_raw',
+                plugin='resize_image_raw::ResizeNode',
                 name='resize_left',
                 parameters=[{
                     'scale_height': image_scale,
                     'scale_width': image_scale,
-                    'use_scale': True,
+                    'interpolation': 3,  # INTER_AREA for downscaling
+                    'input_image_topic': left_image,
+                    'input_camera_info_topic': left_info,
+                    'output_image_topic': '/stereo/left/image_resized',
+                    'output_camera_info_topic': '/stereo/left/camera_info_resized',
                 }],
-                remappings=[
-                    ('image', left_image),
-                    ('camera_info', left_info),
-                    ('resize', '/stereo/left/image_resized'),
-                    ('resize/camera_info', '/stereo/left/camera_info_resized'),
-                ],
             ),
             # Resize node for right camera - scales down images before stereo matching
+            # Using custom resize_image_raw implementation
             ComposableNode(
-                package='image_proc',
-                plugin='image_proc::ResizeNode',
+                package='resize_image_raw',
+                plugin='resize_image_raw::ResizeNode',
                 name='resize_right',
                 parameters=[{
                     'scale_height': image_scale,
                     'scale_width': image_scale,
-                    'use_scale': True,
+                    'interpolation': 3,  # INTER_AREA for downscaling
+                    'input_image_topic': right_image,
+                    'input_camera_info_topic': right_info,
+                    'output_image_topic': '/stereo/right/image_resized',
+                    'output_camera_info_topic': '/stereo/right/camera_info_resized',
                 }],
-                remappings=[
-                    ('image', right_image),
-                    ('camera_info', right_info),
-                    ('resize', '/stereo/right/image_resized'),
-                    ('resize/camera_info', '/stereo/right/camera_info_resized'),
-                ],
             ),
             # Disparity node - computes disparity from rectified stereo pair
             ComposableNode(

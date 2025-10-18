@@ -1,0 +1,14 @@
+# 示例配置: 高质量缩小到一半
+# Example: High quality downscale to half size
+
+resize_node:
+  ros__parameters:
+    scale_width: 0.5
+    scale_height: 0.5
+    interpolation: 3  # AREA - 最适合缩小图像
+    
+    # 话题名称使用默认值（可以被 launch 文件覆盖）
+    input_image_topic: "image"
+    input_camera_info_topic: "camera_info"
+    output_image_topic: "resized/image"
+    output_camera_info_topic: "resized/camera_info"

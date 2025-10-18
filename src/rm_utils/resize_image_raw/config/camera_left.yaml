@@ -1,0 +1,15 @@
+# 左相机配置示例
+# Left camera configuration example
+
+resize_node:
+  ros__parameters:
+    # 缩放参数
+    scale_width: 0.5
+    scale_height: 0.5
+    interpolation: 3  # AREA - 最适合缩小图像
+    
+    # 话题名称 - 左相机
+    input_image_topic: "/camera_left/image_raw"
+    input_camera_info_topic: "/camera_left/camera_info"
+    output_image_topic: "/camera_left/resized/image_raw"
+    output_camera_info_topic: "/camera_left/resized/camera_info"
