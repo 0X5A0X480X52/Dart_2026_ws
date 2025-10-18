@@ -101,6 +101,14 @@ HikCameraNode::HikCameraNode(const rclcpp::NodeOptions & options)
       if (status == MV_OK) {
         fail_count_ = 0;  // Reset fail count on success
         if (frame_buffer_ != nullptr && frame_info.nFrameLen > 0) {
+          // Log pixel type on first frame for debugging
+          static bool logged_pixel_type = false;
+          if (!logged_pixel_type) {
+            RCLCPP_INFO(this->get_logger(), "Source pixel type: 0x%lx, Width: %d, Height: %d, FrameLen: %d", 
+                       frame_info.enPixelType, frame_info.nWidth, frame_info.nHeight, frame_info.nFrameLen);
+            logged_pixel_type = true;
+          }
+          
           // Convert pixel format to BGR8
           MV_CC_PIXEL_CONVERT_PARAM convert_param;
           memset(&convert_param, 0, sizeof(MV_CC_PIXEL_CONVERT_PARAM));
