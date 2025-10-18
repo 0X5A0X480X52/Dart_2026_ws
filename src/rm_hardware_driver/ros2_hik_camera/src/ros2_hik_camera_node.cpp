@@ -133,6 +133,12 @@ HikCameraNode::HikCameraNode(const rclcpp::NodeOptions & options)
           convert_param.pDstBuffer = bgr_buffer_;
           convert_param.nDstBufferSize = bgr_buffer_size_;
           
+          // Verify camera handle before conversion
+          if (camera_handle_ == nullptr) {
+            RCLCPP_ERROR(this->get_logger(), "Camera handle is null during pixel conversion!");
+            continue;
+          }
+          
           int convert_status = MV_CC_ConvertPixelType(camera_handle_, &convert_param);
           if (convert_status == MV_OK) {
             // Create OpenCV Mat
@@ -329,9 +335,17 @@ bool HikCameraNode::initCamera()
   // This will be overridden by parameters later if specified
   status = MV_CC_SetFloatValue(camera_handle_, "AcquisitionFrameRate", 10.0);
   if (status != MV_OK) {
-    RCLCPP_WARN(this->get_logger(), "Failed to set frame rate, status = 0x%x", status);
+    RCLCPP_WARN(this->get_logger(), "Failed to set initial frame rate, status = 0x%x", status);
   } else {
     RCLCPP_INFO(this->get_logger(), "Initial frame rate set to 10.0 fps (conservative)");
+  }
+
+  // Set Bayer conversion quality (1 = bilinear interpolation)
+  status = MV_CC_SetBayerCvtQuality(camera_handle_, 1);
+  if (status != MV_OK) {
+    RCLCPP_WARN(this->get_logger(), "Failed to set Bayer conversion quality, status = 0x%x", status);
+  } else {
+    RCLCPP_INFO(this->get_logger(), "Bayer conversion quality set to bilinear");
   }
 
   RCLCPP_INFO(this->get_logger(), "Camera initialized successfully!");
