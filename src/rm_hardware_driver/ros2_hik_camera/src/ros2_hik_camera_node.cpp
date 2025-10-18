@@ -109,58 +109,97 @@ HikCameraNode::HikCameraNode(const rclcpp::NodeOptions & options)
             logged_pixel_type = true;
           }
           
-          // Convert pixel format to BGR8
-          MV_CC_PIXEL_CONVERT_PARAM convert_param;
-          memset(&convert_param, 0, sizeof(MV_CC_PIXEL_CONVERT_PARAM));
-          
-          convert_param.nWidth = frame_info.nWidth;
-          convert_param.nHeight = frame_info.nHeight;
-          convert_param.pSrcData = frame_buffer_;
-          convert_param.nSrcDataLen = frame_info.nFrameLen;
-          convert_param.enSrcPixelType = frame_info.enPixelType;
-          convert_param.enDstPixelType = PixelType_Gvsp_BGR8_Packed;
-          
-          // Allocate buffer if needed
-          unsigned int need_size = frame_info.nWidth * frame_info.nHeight * 3;
-          if (bgr_buffer_size_ < need_size) {
-            if (bgr_buffer_ != nullptr) {
-              delete[] bgr_buffer_;
+          // For Bayer formats, use OpenCV for debayering instead of HIK SDK
+          if (frame_info.enPixelType == PixelType_Gvsp_BayerRG8 ||
+              frame_info.enPixelType == PixelType_Gvsp_BayerGB8 ||
+              frame_info.enPixelType == PixelType_Gvsp_BayerGR8 ||
+              frame_info.enPixelType == PixelType_Gvsp_BayerBG8) {
+            
+            // Create OpenCV Mat from raw Bayer data
+            cv::Mat bayer_image(frame_info.nHeight, frame_info.nWidth, CV_8UC1, frame_buffer_);
+            cv::Mat bgr_image;
+            
+            // Determine the correct Bayer pattern
+            int bayer_code = cv::COLOR_BayerRG2BGR; // Default to RG
+            if (frame_info.enPixelType == PixelType_Gvsp_BayerGB8) {
+              bayer_code = cv::COLOR_BayerGB2BGR;
+            } else if (frame_info.enPixelType == PixelType_Gvsp_BayerGR8) {
+              bayer_code = cv::COLOR_BayerGR2BGR;
+            } else if (frame_info.enPixelType == PixelType_Gvsp_BayerBG8) {
+              bayer_code = cv::COLOR_BayerBG2BGR;
             }
-            bgr_buffer_ = new unsigned char[need_size];
-            bgr_buffer_size_ = need_size;
-          }
-          
-          convert_param.pDstBuffer = bgr_buffer_;
-          convert_param.nDstBufferSize = bgr_buffer_size_;
-          
-          // Verify camera handle before conversion
-          if (camera_handle_ == nullptr) {
-            RCLCPP_ERROR(this->get_logger(), "Camera handle is null during pixel conversion!");
-            continue;
-          }
-          
-          int convert_status = MV_CC_ConvertPixelType(camera_handle_, &convert_param);
-          if (convert_status == MV_OK) {
-            // Create OpenCV Mat
-            cv::Mat image(frame_info.nHeight, frame_info.nWidth, CV_8UC3, bgr_buffer_);
+            
+            // Convert Bayer to BGR using OpenCV
+            cv::cvtColor(bayer_image, bgr_image, bayer_code);
             
             // Flip image if required
             if (flip_image_) {
-              cv::flip(image, image, -1);  // Flip both horizontally and vertically
+              cv::flip(bgr_image, bgr_image, -1);  // Flip both horizontally and vertically
             }
             
             // Fill image message
             camera_info_msg_.header.stamp = image_msg_.header.stamp = this->now();
-            image_msg_.height = image.rows;
-            image_msg_.width = image.cols;
-            image_msg_.step = image.cols * 3;
-            image_msg_.data.assign(image.data, image.data + image.total() * image.elemSize());
+            image_msg_.height = bgr_image.rows;
+            image_msg_.width = bgr_image.cols;
+            image_msg_.step = bgr_image.cols * 3;
+            image_msg_.data.assign(bgr_image.data, bgr_image.data + bgr_image.total() * bgr_image.elemSize());
             
             // Publish
             camera_pub_.publish(image_msg_, camera_info_msg_);
           } else {
-            RCLCPP_WARN(this->get_logger(), "Failed to convert pixel format, status = 0x%x", 
-                       convert_status);
+            // For non-Bayer formats, use HIK SDK conversion
+            MV_CC_PIXEL_CONVERT_PARAM convert_param;
+            memset(&convert_param, 0, sizeof(MV_CC_PIXEL_CONVERT_PARAM));
+            
+            convert_param.nWidth = frame_info.nWidth;
+            convert_param.nHeight = frame_info.nHeight;
+            convert_param.pSrcData = frame_buffer_;
+            convert_param.nSrcDataLen = frame_info.nFrameLen;
+            convert_param.enSrcPixelType = frame_info.enPixelType;
+            convert_param.enDstPixelType = PixelType_Gvsp_BGR8_Packed;
+            
+            // Allocate buffer if needed
+            unsigned int need_size = frame_info.nWidth * frame_info.nHeight * 3;
+            if (bgr_buffer_size_ < need_size) {
+              if (bgr_buffer_ != nullptr) {
+                delete[] bgr_buffer_;
+              }
+              bgr_buffer_ = new unsigned char[need_size];
+              bgr_buffer_size_ = need_size;
+            }
+            
+            convert_param.pDstBuffer = bgr_buffer_;
+            convert_param.nDstBufferSize = bgr_buffer_size_;
+            
+            // Verify camera handle before conversion
+            if (camera_handle_ == nullptr) {
+              RCLCPP_ERROR(this->get_logger(), "Camera handle is null during pixel conversion!");
+              continue;
+            }
+            
+            int convert_status = MV_CC_ConvertPixelType(camera_handle_, &convert_param);
+            if (convert_status == MV_OK) {
+              // Create OpenCV Mat
+              cv::Mat image(frame_info.nHeight, frame_info.nWidth, CV_8UC3, bgr_buffer_);
+              
+              // Flip image if required
+              if (flip_image_) {
+                cv::flip(image, image, -1);  // Flip both horizontally and vertically
+              }
+              
+              // Fill image message
+              camera_info_msg_.header.stamp = image_msg_.header.stamp = this->now();
+              image_msg_.height = image.rows;
+              image_msg_.width = image.cols;
+              image_msg_.step = image.cols * 3;
+              image_msg_.data.assign(image.data, image.data + image.total() * image.elemSize());
+              
+              // Publish
+              camera_pub_.publish(image_msg_, camera_info_msg_);
+            } else {
+              RCLCPP_WARN(this->get_logger(), "Failed to convert pixel format, status = 0x%x", 
+                         convert_status);
+            }
           }
         }
       } else {
