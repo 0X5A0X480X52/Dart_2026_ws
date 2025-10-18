@@ -23,6 +23,9 @@ StereoDistanceEstimatorNode::StereoDistanceEstimatorNode(const rclcpp::NodeOptio
   this->declare_parameter("cx", 320.0);
   this->declare_parameter("cy", 240.0);
   this->declare_parameter("baseline", 0.12);  // 12cm 基线
+  
+  // 图像缩放参数
+  this->declare_parameter("image_scale", 0.5);  // 默认0.5，与stereo_image_proc_wrapper保持一致
 
   target2d_topic_ = this->get_parameter("target2d_topic").as_string();
   disparity_topic_ = this->get_parameter("disparity_topic").as_string();
@@ -38,6 +41,7 @@ StereoDistanceEstimatorNode::StereoDistanceEstimatorNode(const rclcpp::NodeOptio
   cx_ = this->get_parameter("cx").as_double();
   cy_ = this->get_parameter("cy").as_double();
   baseline_ = this->get_parameter("baseline").as_double();
+  image_scale_ = this->get_parameter("image_scale").as_double();
 
   // 创建订阅器 - 使用普通订阅，不再使用 message_filters
   target2d_sub_ = this->create_subscription<rm_interfaces::msg::Target2DArray>(
@@ -118,18 +122,23 @@ void StereoDistanceEstimatorNode::target2dCallback(
 
   // 遍历每个2D目标
   for (const auto & target2d : targets_msg->targets) {
-    // 获取目标中心像素坐标
+    // 获取目标中心像素坐标（原始图像坐标）
     int pixel_x = static_cast<int>(target2d.x);
     int pixel_y = static_cast<int>(target2d.y);
+
+    // 将坐标缩放到点云/视差图的尺寸
+    // 如果点云/视差图是原始图像的 0.5 倍，则坐标也要缩小 0.5 倍
+    int scaled_x = static_cast<int>(pixel_x * image_scale_);
+    int scaled_y = static_cast<int>(pixel_y * image_scale_);
 
     geometry_msgs::msg::Point point_3d;
     bool success = false;
 
     // 根据配置选择使用点云或视差图
     if (use_pointcloud_) {
-      success = get3DPointFromCloud(cloud_msg, pixel_x, pixel_y, point_3d);
+      success = get3DPointFromCloud(cloud_msg, scaled_x, scaled_y, point_3d);
     } else {
-      success = get3DPointFromDisparity(disparity_msg, pixel_x, pixel_y, point_3d);
+      success = get3DPointFromDisparity(disparity_msg, scaled_x, scaled_y, point_3d);
     }
 
     // 如果成功获取3D坐标
@@ -152,11 +161,13 @@ void StereoDistanceEstimatorNode::target2dCallback(
         target3d_array.targets.push_back(target3d);
       } else {
         RCLCPP_DEBUG(this->get_logger(), 
-          "Target at (%d, %d) has invalid distance: %.2f m", pixel_x, pixel_y, distance);
+          "Target at orig(%d, %d) scaled(%d, %d) has invalid distance: %.2f m", 
+          pixel_x, pixel_y, scaled_x, scaled_y, distance);
       }
     } else {
       RCLCPP_DEBUG(this->get_logger(), 
-        "Failed to get 3D point for target at (%d, %d)", pixel_x, pixel_y);
+        "Failed to get 3D point for target at orig(%d, %d) scaled(%d, %d)", 
+        pixel_x, pixel_y, scaled_x, scaled_y);
     }
   }
 

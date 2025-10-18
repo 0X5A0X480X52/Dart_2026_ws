@@ -29,23 +29,34 @@ ROS2 节点，用于将 2D 目标检测结果转换为 3D 空间坐标。支持�
 ## 参数
 
 ### 话题配置
+
 - `target2d_topic` (string, 默认: `/filter/target2d_array`)：输入 2D 目标话题
 - `disparity_topic` (string, 默认: `/stereo/disparity`)：输入视差图话题
 - `pointcloud_topic` (string, 默认: `/stereo/points2`)：输入点云话题
 - `target3d_topic` (string, 默认: `/stereo/target3d_array_raw`)：输出 3D 目标话题
 
 ### 算法配置
+
 - `use_pointcloud` (bool, 默认: `true`)：使用点云（true）或视差图（false）进行深度估计
 - `max_distance` (double, 默认: `10.0`)：最大有效距离（米）
 - `min_distance` (double, 默认: `0.1`)：最小有效距离（米）
 - `queue_size` (int, 默认: `10`)：消息队列大小
 
 ### 相机内参（仅用于视差图模式）
+
 - `fx` (double, 默认: `600.0`)：焦距 x（像素）
 - `fy` (double, 默认: `600.0`)：焦距 y（像素）
 - `cx` (double, 默认: `320.0`)：主点 x 坐标（像素）
 - `cy` (double, 默认: `240.0`)：主点 y 坐标（像素）
 - `baseline` (double, 默认: `0.12`)：立体相机基线距离（米）
+
+### 图像缩放配置（重要！）
+
+- `image_scale` (double, 默认: `0.5`)：点云/视差图相对于原始图像的缩放比例
+  - ⚠️ **必须与 `stereo_image_proc_wrapper` 配置中的 `image_scale` 保持一致**
+  - 如果立体视觉处理将图像缩小到 0.5 倍，此参数也应设为 0.5
+  - 如果不缩放，设为 1.0
+  - 此参数用于将 2D 目标坐标从原始图像尺寸映射到点云/视差图尺寸
 
 ## 编译
 
@@ -102,6 +113,7 @@ ros2 component standalone stereo_distance_estimator stereo_distance_estimator::S
 ## 工作原理
 
 ### 点云模式（推荐）
+
 1. 接收同步的 2D 目标、视差图和点云数据
 2. 对每个 2D 目标，获取其像素坐标 (x, y)
 3. 在点云中查找对应像素的 3D 点（row-major 存储）
@@ -110,6 +122,7 @@ ros2 component standalone stereo_distance_estimator stereo_distance_estimator::S
 6. 发布 3D 目标数组
 
 ### 视差图模式
+
 1. 接收同步的 2D 目标、视差图和点云数据
 2. 对每个 2D 目标，从视差图中获取视差值 d
 3. 使用公式计算深度：`Z = (fx × baseline) / d`
@@ -159,16 +172,19 @@ ros2 component standalone stereo_distance_estimator stereo_distance_estimator::S
 ## 故障排除
 
 ### 没有输出
+
 - 检查输入话题是否有数据：`ros2 topic echo <topic_name>`
 - 检查消息时间戳是否同步
 - 增加 `queue_size` 参数
 
 ### 3D 坐标不准确
+
 - 验证相机内参是否正确（视差图模式）
 - 检查点云数据质量
 - 调整距离范围参数
 
 ### 性能问题
+
 - 减少输入目标数量
 - 降低话题发布频率
 - 使用点云模式而非视差图模式

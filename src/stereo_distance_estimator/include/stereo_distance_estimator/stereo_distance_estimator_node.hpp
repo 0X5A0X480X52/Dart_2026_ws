@@ -69,6 +69,9 @@ private:
   double fx_, fy_;  // 焦距
   double cx_, cy_;  // 主点
   double baseline_;  // 基线距离 (m)
+
+  // 图像缩放参数
+  double image_scale_;  // 点云/视差图相对于原始图像的缩放比例
 };
 
 }  // namespace stereo_distance_estimator

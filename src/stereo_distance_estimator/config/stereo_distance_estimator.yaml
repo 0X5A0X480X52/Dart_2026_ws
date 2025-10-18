@@ -21,3 +21,9 @@ stereo_distance_estimator:
     cx: 320.0      # principal point x (pixels)
     cy: 240.0      # principal point y (pixels)
     baseline: 0.12 # stereo baseline distance (meters)
+    
+    # Image scale parameter
+    # IMPORTANT: This must match the image_scale in stereo_image_proc_wrapper config!
+    # If stereo processing resizes images to 0.5x, set this to 0.5
+    # If no resizing, set to 1.0
+    image_scale: 0.5  # Scale factor of pointcloud/disparity relative to original image
