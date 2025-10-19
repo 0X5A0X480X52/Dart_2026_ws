@@ -1,0 +1,55 @@
+digraph SystemBringup {
+    rankdir=TB;
+    node [shape=box, style="rounded,filled", fontname="Arial"];
+    
+    // 定义节点样式
+    start [label="系统启动", fillcolor="#90EE90", shape=ellipse];
+    
+    // Stage 1
+    stage1 [label="Stage 1\n(t=0s)", fillcolor="#FFD700", shape=diamond];
+    camera [label="双相机驱动\nros2_mindvision_camera\ndual_camera_launch.py", fillcolor="#87CEEB"];
+    
+    // Stage 2
+    wait1 [label="等待 5秒", fillcolor="#FFA500", shape=ellipse];
+    stage2 [label="Stage 2\n(t=5s)\n并行启动", fillcolor="#FFD700", shape=diamond];
+    obj_detect [label="目标检测\nobject_detection_openvino\nobject_detection_openvino.launch.py", fillcolor="#87CEEB"];
+    stereo_proc [label="立体图像处理\nstereo_image_proc_wrapper\nstereo_image_proc.launch.py", fillcolor="#87CEEB"];
+    
+    // Stage 3
+    wait2 [label="等待 5秒", fillcolor="#FFA500", shape=ellipse];
+    stage3 [label="Stage 3\n(t=10s)", fillcolor="#FFD700", shape=diamond];
+    distance [label="距离估计\nstereo_distance_estimator\nstereo_distance_estimator_config.launch.py", fillcolor="#87CEEB"];
+    
+    complete [label="系统运行中", fillcolor="#90EE90", shape=ellipse];
+    
+    // 定义连接
+    start -> stage1;
+    stage1 -> camera;
+    camera -> wait1;
+    wait1 -> stage2;
+    stage2 -> obj_detect;
+    stage2 -> stereo_proc;
+    obj_detect -> wait2 [style=dashed];
+    stereo_proc -> wait2 [style=dashed];
+    wait2 -> stage3;
+    stage3 -> distance;
+    distance -> complete;
+    
+    // 配置文件
+    config [label="配置文件\nlaunch_config.yaml", fillcolor="#FFB6C1", shape=note];
+    config -> stage1 [style=dotted, label="配置"];
+    config -> stage2 [style=dotted];
+    config -> stage3 [style=dotted];
+    
+    // 图例
+    subgraph cluster_legend {
+        label = "图例";
+        style = filled;
+        color = lightgrey;
+        
+        legend_stage [label="启动阶段", fillcolor="#FFD700", shape=diamond];
+        legend_node [label="ROS节点", fillcolor="#87CEEB"];
+        legend_wait [label="延迟等待", fillcolor="#FFA500", shape=ellipse];
+        legend_config [label="配置", fillcolor="#FFB6C1", shape=note];
+    }
+}

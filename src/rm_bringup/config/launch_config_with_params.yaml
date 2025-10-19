@@ -1,0 +1,44 @@
+# 系统启动配置文件 - 自定义参数示例
+# 这是一个展示如何传递参数的实际示例
+
+# 阶段1：相机驱动
+stage1:
+  camera:
+    package: 'ros2_mindvision_camera'
+    launch_file: 'dual_camera_launch.py'
+    enabled: true
+    # 传递自定义相机配置文件
+    launch_arguments:
+      params_file: '/home/amatrix/Dart_2026_ws/src/rm_hardware_driver/ros2_mindvision_camera/config/dual_camera_params.yaml'
+      use_sensor_data_qos: 'false'
+
+# 阶段2：并行启动
+stage2:
+  # 目标检测 - 自定义检测参数
+  object_detection:
+    package: 'object_detection_openvino'
+    launch_file: 'object_detection_openvino.launch.py'
+    enabled: true
+    launch_arguments:
+      mode: 'armor'
+      input_width: '640'
+      input_height: '640'
+      score_threshold: '0.6'
+      nms_threshold: '0.45'
+  
+  # 立体图像处理 - 自定义配置文件
+  stereo_image_proc:
+    package: 'stereo_image_proc_wrapper'
+    launch_file: 'stereo_image_proc.launch.py'
+    enabled: true
+    launch_arguments:
+      config_file: '/home/amatrix/Dart_2026_ws/src/stereo_vision/stereo_image_proc_wrapper/config/stereo_params.yaml'
+
+# 阶段3：距离估计 - 自定义配置文件
+stage3:
+  distance_estimator:
+    package: 'stereo_distance_estimator'
+    launch_file: 'stereo_distance_estimator_config.launch.py'
+    enabled: true
+    launch_arguments:
+      config_file: '/home/amatrix/Dart_2026_ws/src/stereo_distance_estimator/config/stereo_distance_estimator.yaml'

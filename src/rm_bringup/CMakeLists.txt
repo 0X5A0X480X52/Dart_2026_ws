@@ -21,4 +21,22 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+# Install launch files
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+# Install config files
+install(DIRECTORY
+  config
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+# Install scripts
+install(PROGRAMS
+  scripts/start_system.sh
+  DESTINATION lib/${PROJECT_NAME}
+)
+
 ament_package()

@@ -1,0 +1,90 @@
+# 系统启动配置文件示例
+# 复制此文件并根据需要修改
+
+# 阶段1：相机驱动
+# 这个阶段首先启动，为后续节点提供图像数据
+stage1:
+  camera:
+    package: 'ros2_mindvision_camera'
+    launch_file: 'dual_camera_launch.py'
+    enabled: true
+    # 可选的其他launch文件:
+    # - 'mv_launch.py'              # 单相机启动
+    # - 'mv_launch_with_sn.py'      # 通过序列号启动相机
+    
+    # launch参数（可选）
+    launch_arguments:
+      # params_file: '/path/to/custom/dual_camera_params.yaml'
+      # use_sensor_data_qos: 'false'
+
+# 阶段2：图像处理（并行启动）
+# 等待Stage 1完成后启动，这两个节点会同时启动
+stage2:
+  # 目标检测节点
+  object_detection:
+    package: 'object_detection_openvino'
+    launch_file: 'object_detection_openvino.launch.py'
+    enabled: true
+    # 可选的其他launch文件:
+    # - 'test_with_fake_image.launch.py'  # 使用假图像测试
+    
+    # launch参数（可选）
+    launch_arguments:
+      # params_file: '/path/to/custom/params.yaml'
+      # mode: 'armor'              # 检测模式: 'armor', 'rune', 等
+      # input_width: '640'         # 输入图像宽度
+      # input_height: '640'        # 输入图像高度
+      # score_threshold: '0.5'     # 置信度阈值
+      # nms_threshold: '0.4'       # NMS阈值
+  
+  # 立体图像处理节点
+  stereo_image_proc:
+    package: 'stereo_image_proc_wrapper'
+    launch_file: 'stereo_image_proc.launch.py'
+    enabled: true
+    # 可选的其他launch文件:
+    # - 'stereo_pipeline.launch.py'  # 完整的立体处理流水线
+    
+    # launch参数（可选）
+    launch_arguments:
+      # config_file: '/path/to/custom/stereo_params.yaml'
+      # left_namespace: 'camera_left'
+      # right_namespace: 'camera_right'
+      # approximate_sync: 'false'
+
+# 阶段3：距离估计
+# 等待Stage 2完成后启动
+stage3:
+  distance_estimator:
+    package: 'stereo_distance_estimator'
+    launch_file: 'stereo_distance_estimator_config.launch.py'
+    enabled: true
+    # 可选的其他launch文件:
+    # - 'stereo_distance_estimator.launch.py'  # 基本版本
+    # - 'full_system_test.launch.py'           # 完整系统测试
+    
+    # launch参数（可选）
+    launch_arguments:
+      # config_file: '/path/to/custom/stereo_distance_estimator.yaml'
+
+# ============ 使用说明 ============
+# 1. 要禁用某个节点，将 enabled 设置为 false
+# 2. 要使用不同的launch文件，修改 launch_file 字段
+# 3. 要传递参数给launch文件，在 launch_arguments 下添加键值对
+# 4. 取消注释 launch_arguments 中的参数并修改值来自定义配置
+# 5. 确保 package 名称正确
+# 6. 保存后使用以下命令启动:
+#    ros2 launch rm_bringup system_bringup.launch.py config_file:=/path/to/this/file.yaml
+#
+# ============ 参数示例 ============
+# 要使用自定义配置文件，取消注释并修改路径：
+#
+# stage1:
+#   camera:
+#     launch_arguments:
+#       params_file: '/home/user/my_camera_config.yaml'
+#
+# stage3:
+#   distance_estimator:
+#     launch_arguments:
+#       config_file: '/home/user/my_estimator_config.yaml'

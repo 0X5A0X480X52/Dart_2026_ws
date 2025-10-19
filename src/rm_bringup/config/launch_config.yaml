@@ -1,0 +1,48 @@
+# 系统启动配置文件
+# 定义各个子系统的launch文件路径和参数
+
+# 阶段1：相机驱动
+stage1:
+  camera:
+    package: 'ros2_mindvision_camera'
+    launch_file: 'dual_camera_launch.py'
+    enabled: true
+    # launch参数（可选）
+    launch_arguments:
+      # params_file: '/path/to/custom/dual_camera_params.yaml'
+      # use_sensor_data_qos: 'false'
+
+# 阶段2：并行启动
+stage2:
+  object_detection:
+    package: 'object_detection_openvino'
+    launch_file: 'object_detection_openvino.launch.py'
+    enabled: true
+    # launch参数（可选）
+    launch_arguments:
+      # params_file: '/path/to/custom/params.yaml'
+      # mode: 'armor'
+      # input_width: '640'
+      # input_height: '640'
+      # score_threshold: '0.5'
+      # nms_threshold: '0.4'
+  
+  stereo_image_proc:
+    package: 'stereo_image_proc_wrapper'
+    launch_file: 'stereo_image_proc.launch.py'
+    enabled: true
+    # launch参数（可选）
+    launch_arguments:
+      # config_file: '/path/to/custom/stereo_params.yaml'
+      # left_namespace: 'camera_left'
+      # right_namespace: 'camera_right'
+
+# 阶段3：距离估计
+stage3:
+  distance_estimator:
+    package: 'stereo_distance_estimator'
+    launch_file: 'stereo_distance_estimator_config.launch.py'
+    enabled: true
+    # launch参数（可选）
+    launch_arguments:
+      # config_file: '/path/to/custom/stereo_distance_estimator.yaml'
