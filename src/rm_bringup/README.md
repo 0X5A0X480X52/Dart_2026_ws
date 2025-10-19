@@ -9,11 +9,13 @@
 系统按照以下三个阶段顺序启动：
 
 ### Stage 1: 相机驱动
+
 - 启动双相机驱动节点
 - 包: `ros2_mindvision_camera`
 - Launch文件: `dual_camera_launch.py`
 
 ### Stage 2: 并行启动（等待Stage 1完成后）
+
 - **目标检测**: OpenVINO目标检测节点
   - 包: `object_detection_openvino`
   - Launch文件: `object_detection_openvino.launch.py`
@@ -23,6 +25,7 @@
   - Launch文件: `stereo_image_proc.launch.py`
 
 ### Stage 3: 距离估计（等待Stage 2完成后）
+
 - 启动立体距离估计节点
 - 包: `stereo_distance_estimator`
 - Launch文件: `stereo_distance_estimator_config.launch.py`
@@ -48,7 +51,7 @@ ros2 launch rm_bringup system_bringup.launch.py
 使用自定义配置文件：
 
 ```bash
-ros2 launch rm_bringup system_bringup.launch.py config_file:=/path/to/your/config.yaml
+ros2 launch rm_bringup system_bringup.launch.py system_config_file:=/path/to/your/config.yaml
 ```
 
 ### 3. 调整启动延迟
@@ -61,6 +64,7 @@ ros2 launch rm_bringup system_bringup.launch.py stage2_delay:=8.0 stage3_delay:=
 ```
 
 参数说明：
+
 - `stage1_delay`: Stage 1启动延迟（默认: 0.0秒）
 - `stage2_delay`: Stage 2启动延迟，等待Stage 1启动完成（默认: 5.0秒）
 - `stage3_delay`: Stage 3启动延迟，等待Stage 2启动完成（默认: 10.0秒）
@@ -111,10 +115,12 @@ stage1:
 ### 可用的Launch参数
 
 #### Stage 1 - 相机驱动
+
 - `params_file`: 相机参数配置文件路径
 - `use_sensor_data_qos`: 是否使用SensorDataQoS（'true'/'false'）
 
 #### Stage 2 - 目标检测
+
 - `mode`: 检测模式（'armor', 'rune'等）
 - `input_width`: 输入图像宽度
 - `input_height`: 输入图像高度
@@ -122,11 +128,13 @@ stage1:
 - `nms_threshold`: NMS阈值
 
 #### Stage 2 - 立体图像处理
+
 - `config_file`: 配置文件路径
 - `left_namespace`: 左相机命名空间
 - `right_namespace`: 右相机命名空间
 
 #### Stage 3 - 距离估计
+
 - `config_file`: 配置文件路径
 
 ### 配置文件示例
@@ -164,15 +172,17 @@ stage3:
 如果你想使用不同的launch文件，可以：
 
 1. 复制配置文件到新位置：
-```bash
-cp config/launch_config.yaml my_custom_config.yaml
-```
+
+    ```bash
+    cp config/launch_config.yaml my_custom_config.yaml
+    ```
 
 2. 编辑配置文件，修改相应的包名和launch文件名
 
 3. 使用自定义配置启动：
+
 ```bash
-ros2 launch rm_bringup system_bringup.launch.py config_file:=/path/to/my_custom_config.yaml
+ros2 launch rm_bringup system_bringup.launch.py system_config_file:=/path/to/my_custom_config.yaml
 ```
 
 ## 调试

@@ -7,6 +7,9 @@
 3. 距离估计 (Stage 3)
 
 支持通过配置文件传递launch参数
+
+使用方法:
+  ros2 launch rm_bringup system_bringup.launch.py system_config_file:=<配置文件路径>
 """
 
 import os
@@ -67,13 +70,13 @@ def generate_launch_description():
     
     # 声明参数
     config_file_arg = DeclareLaunchArgument(
-        'config_file',
+        'system_config_file',
         default_value=PathJoinSubstitution([
             FindPackageShare('rm_bringup'),
             'config',
             'launch_config.yaml'
         ]),
-        description='配置文件路径'
+        description='系统启动配置文件路径'
     )
     
     # 启动延迟参数（秒）

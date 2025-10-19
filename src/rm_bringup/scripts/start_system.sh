@@ -68,7 +68,7 @@ done
 LAUNCH_CMD="ros2 launch rm_bringup system_bringup.launch.py stage2_delay:=$STAGE2_DELAY stage3_delay:=$STAGE3_DELAY"
 
 if [ ! -z "$CONFIG_FILE" ]; then
-    LAUNCH_CMD="$LAUNCH_CMD config_file:=$CONFIG_FILE"
+    LAUNCH_CMD="$LAUNCH_CMD system_config_file:=$CONFIG_FILE"
 fi
 
 echo -e "${GREEN}启动命令:${NC} $LAUNCH_CMD"
