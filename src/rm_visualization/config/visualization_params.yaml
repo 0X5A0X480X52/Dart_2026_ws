@@ -1,0 +1,12 @@
+visualization_node:
+  ros__parameters:
+    # 接收调试数据的话题名称
+    receive_debug_data_topic_name: "/debug/original_data"
+    
+    # 发送调试数据的话题名称
+    send_debug_data_topic_name: "/debug/processed_data"
+    
+    # 串口驱动节点名称，用于参数服务调用
+    # 该参数在使用虚拟串口时不需要手动修改，
+    # 因为test_visualization.launch.py会自动覆盖
+    serial_driver_node_name: "serial_driver_node"
