@@ -1,0 +1,26 @@
+/**:
+  ros__parameters:
+    # 订阅的来自stereo_distance_estimator节点的话题
+    target2d_topic_name: "/detector/target2d_array"
+
+    # 订阅的来自distance_filter_node节点的话题
+    receive_topic_name: "/target"
+
+    # 从可视化节点订阅的包含用户输入数据的话题，对应接收器仅当debug_mode为true时工作
+    receive_debug_data_topic_name: "/debug/processed_data"
+
+    # 将串口数据包装后发送给可视化节点的话题，对应发布器仅当debug_mode为true时工作
+    send_debug_data_topic_name: "/debug/original_data"
+
+    # 是否启用调试模式，启用则意味着会和可视化节点visualization_node互动，
+    # 以及将来自visualization_node的数据包装并发送给下位机
+    debug_mode: true
+
+    # 串口通信相关参数
+    port_name: "/dev/ttyACM0" # 串口设备
+    protocol: "dart"
+    enable_data_print: false # 改为true将会打印从串口读出来的16进制数据
+
+    # 理想目标点在图像坐标系中的横坐标，应根据实际情况调整
+    # 注意：该参数需要手动修改，串口节点暂时不会自动修改这个参数
+    desiredPosX: 200

@@ -3,14 +3,20 @@
 <package format="3">
   <name>rm_serial_driver</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="3432900546@qq.com">amatrix02</maintainer>
-  <license>TODO: License declaration</license>
+  <description>Serial driver for RoboMaster robots with dart protocol support</description>
+  <maintainer email="2126948842@qq.com">lenovo</maintainer>
+  <license>Apache License 2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>rm_interfaces</depend>
+  <depend>rm_utils</depend>
+  <depend>tf2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>eigen</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
