@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.20)
 project(rm_interfaces)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -19,6 +19,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MultiViewTargetArray.msg"
   "msg/Target3D.msg"
   "msg/Target3DArray.msg"
+  "msg/VisualDisplayData.msg"
+  "msg/VisualInputData.msg"
+  "srv/GetDesiredPosX.srv"
   DEPENDENCIES std_msgs geometry_msgs
 )
 
