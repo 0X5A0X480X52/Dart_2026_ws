@@ -47,13 +47,13 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("input_height", 640);
     this->declare_parameter("score_threshold", 0.5);
     this->declare_parameter("nms_threshold", 0.4);
-    this->declare_parameter("xml_path", "/path/to/model.xml");
-    this->declare_parameter("bin_path", "/path/to/model.bin");
+    this->declare_parameter("xml_path", "./src/object_detection_openvino/config/openvino/Katrin.xml");
+    this->declare_parameter("bin_path", "./src/object_detection_openvino/config/openvino/Katrin.bin");
     this->declare_parameter("device", "CPU");
-    this->declare_parameter("image_topic", "image_raw");
+    this->declare_parameter("image_topic", "/camera_left/image_raw");
     this->declare_parameter("detection_topic", "/detector/target2d_array");
     this->declare_parameter("debug_image_topic", "/detector/debug_image");
-    this->declare_parameter("publish_debug_image", false);
+    this->declare_parameter("publish_debug_image", true);
     
     mode_ = this->get_parameter("mode").as_string();
     input_width_ = this->get_parameter("input_width").as_int();

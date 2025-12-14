@@ -30,7 +30,7 @@
 // project
 #include "./fixed_packet.hpp"
 #include "transporter/transporter_interface.hpp"
-#include "../../../rm_utils/logger/include/log.hpp"
+#include <rm_utils/logger/log.hpp>
 
 template <int capacity = 16>
 class FixedPacketTool {

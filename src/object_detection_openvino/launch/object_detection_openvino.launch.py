@@ -48,12 +48,12 @@ def generate_launch_description():
         ),
         DeclareLaunchArgument(
             'xml_path',
-            default_value='/path/to/model.xml',
+            default_value='./src/object_detection_openvino/config/openvino/Katrin.xml',
             description='Path to OpenVINO model XML file'
         ),
         DeclareLaunchArgument(
             'bin_path',
-            default_value='/path/to/model.bin',
+            default_value='./src/object_detection_openvino/config/openvino/Katrin.bin',
             description='Path to OpenVINO model BIN file'
         ),
         DeclareLaunchArgument(
@@ -65,6 +65,11 @@ def generate_launch_description():
             'image_topic',
             default_value='image_raw',
             description='Input image topic name'
+        ),
+        DeclareLaunchArgument(
+            'publish_debug_image',
+            default_value='true',
+            description='Whether to publish debug images'
         ),
         
         Node(

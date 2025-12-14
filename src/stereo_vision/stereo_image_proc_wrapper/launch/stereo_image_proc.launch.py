@@ -166,7 +166,7 @@ def generate_launch_description():
                 parameters=[{
                     'scale_height': image_scale,
                     'scale_width': image_scale,
-                    'interpolation': 3,  # INTER_AREA for downscaling
+                    'interpolation': 0,  # INTER_AREA for downscaling
                     'input_image_topic': right_image,
                     'input_camera_info_topic': right_info,
                     'output_image_topic': '/stereo/right/image_resized',

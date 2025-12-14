@@ -25,8 +25,8 @@
 #include <Eigen/Geometry>
 #include <rclcpp/rclcpp.hpp>
 // project
-#include "../../../rm_utils/logger/include/log.hpp"
-#include "../../../rm_utils/math/utils.hpp"
+#include <rm_utils/logger/log.hpp>
+#include <rm_utils/math/utils.hpp>
 // struct
 #include "serial_struct/serial_struct.hpp"
 SerialDriverNode::SerialDriverNode(const rclcpp::NodeOptions &options)

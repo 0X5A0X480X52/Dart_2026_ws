@@ -4,7 +4,7 @@
 # 阶段1：相机驱动
 stage1:
   camera:
-    package: 'ros2_mindvision_camera'
+    package: 'mindvision_camera'
     launch_file: 'dual_camera_launch.py'
     enabled: true
     # 传递自定义相机配置文件

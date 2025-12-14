@@ -18,8 +18,8 @@ resize_node:
     
     # 话题名称配置 (Topic names configuration)
     # 输入话题 (Input topics)
-    input_image_topic: "image"
-    input_camera_info_topic: "camera_info"
+    input_image_topic: "/camera_left/image_raw"
+    input_camera_info_topic: "/camera_left/camera_info"
     
     # 输出话题 (Output topics)
     output_image_topic: "resized/image"

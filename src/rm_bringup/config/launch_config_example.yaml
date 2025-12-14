@@ -5,7 +5,7 @@
 # 这个阶段首先启动，为后续节点提供图像数据
 stage1:
   camera:
-    package: 'ros2_mindvision_camera'
+    package: 'mindvision_camera'
     launch_file: 'dual_camera_launch.py'
     enabled: true
     # 可选的其他launch文件:

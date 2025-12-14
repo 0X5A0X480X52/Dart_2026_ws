@@ -50,9 +50,6 @@ def generate_launch_description():
                 'dual_camera_launch.py'
             ])
         ]),
-        launch_arguments={
-            'use_sim_time': LaunchConfiguration('use_sim_time'),
-        }.items()
     )
     
     # 2. 启动立体视觉处理 (延迟2秒，等待相机初始化)
@@ -68,9 +65,6 @@ def generate_launch_description():
                         'stereo_image_proc.launch.py'
                     ])
                 ]),
-                launch_arguments={
-                    'use_sim_time': LaunchConfiguration('use_sim_time'),
-                }.items()
             )
         ]
     )
@@ -88,9 +82,6 @@ def generate_launch_description():
                         'object_detection_openvino.launch.py'
                     ])
                 ]),
-                launch_arguments={
-                    'use_sim_time': LaunchConfiguration('use_sim_time'),
-                }.items()
             )
         ]
     )

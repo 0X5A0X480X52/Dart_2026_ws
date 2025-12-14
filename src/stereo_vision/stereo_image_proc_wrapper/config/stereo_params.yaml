@@ -13,7 +13,7 @@
     # Number of disparity levels
     # The disparity search range. Must be divisible by 16.
     # Typical values: 64, 128, 256
-    disparity_range: 128
+    disparity_range: 256
     
     # Correlation window size (odd number)
     # The linear size of the blocks compared by the stereo matcher.
@@ -26,7 +26,7 @@
     # over the second best value to consider the match correct.
     # Typical values: 5-15
     # Higher values mean more reliable but sparser disparity maps.
-    uniqueness_ratio: 10.0
+    uniqueness_ratio: 5.0
     
     # Texture threshold
     # Filters out areas that don't have enough texture for reliable matching.
@@ -74,7 +74,7 @@
     # Disparity refinement
     # Full-resolution disparity maps (subpixel interpolation)
     # 0 = no refinement, 1 = full refinement
-    full_dp: false
+    full_dp: true
     
     # Point Cloud Node Parameters
     
