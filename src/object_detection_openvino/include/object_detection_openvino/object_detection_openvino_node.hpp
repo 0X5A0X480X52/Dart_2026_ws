@@ -34,6 +34,12 @@ private:
     double nms_threshold_;
     bool startup_;
     
+    // ROI parameters
+    std::string roi_mode_;
+    int roi_width_;
+    int roi_height_;
+    cv::Rect roi_rect_;  // Current ROI rectangle in original image coordinates
+    
     // Model paths
     std::string xml_path_;
     std::string bin_path_;
@@ -50,7 +56,8 @@ private:
         const std_msgs::msg::Header& header);
     void drawDebugImage(
         cv::Mat& image,
-        const std::vector<ROS2OpenvinoInfer::Light>& detections);
+        const std::vector<ROS2OpenvinoInfer::Light>& detections,
+        const cv::Rect& roi_rect);
 };
 
 #endif // OBJECT_DETECTION_OPENVINO_NODE_HPP_

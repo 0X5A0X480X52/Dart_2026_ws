@@ -54,6 +54,9 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("detection_topic", "/detector/target2d_array");
     this->declare_parameter("debug_image_topic", "/detector/debug_image");
     this->declare_parameter("publish_debug_image", true);
+    this->declare_parameter("roi_mode", "full");
+    this->declare_parameter("roi_width", 1280);
+    this->declare_parameter("roi_height", 1024);
     
     mode_ = this->get_parameter("mode").as_string();
     input_width_ = this->get_parameter("input_width").as_int();
@@ -67,6 +70,9 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     detection_topic_ = this->get_parameter("detection_topic").as_string();
     debug_image_topic_ = this->get_parameter("debug_image_topic").as_string();
     publish_debug_image_ = this->get_parameter("publish_debug_image").as_bool();
+    roi_mode_ = this->get_parameter("roi_mode").as_string();
+    roi_width_ = this->get_parameter("roi_width").as_int();
+    roi_height_ = this->get_parameter("roi_height").as_int();
     
     RCLCPP_INFO(this->get_logger(), "Parameters initialized:");
     RCLCPP_INFO(this->get_logger(), "  Mode: %s", mode_.c_str());
@@ -80,6 +86,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     RCLCPP_INFO(this->get_logger(), "  Detection topic: %s", detection_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Debug image topic: %s", debug_image_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Publish debug image: %s", publish_debug_image_ ? "true" : "false");
+    RCLCPP_INFO(this->get_logger(), "  ROI mode: %s", roi_mode_.c_str());
+    RCLCPP_INFO(this->get_logger(), "  ROI size: %dx%d", roi_width_, roi_height_);
 }
 
 void ObjectDetectionOpenvinoNode::loadModel()
@@ -111,9 +119,50 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
         cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
         cv::Mat image = cv_ptr->image;
         
-        // Perform inference
+        // Prepare ROI image and record ROI rectangle
+        cv::Mat roi_image;
+        cv::Rect roi_rect;
+        
+        if (roi_mode_ == "center") {
+            // Center-crop strategy: extract centered region with specified size
+            int img_width = image.cols;
+            int img_height = image.rows;
+            
+            // Calculate ROI dimensions (clamp to image size)
+            int actual_roi_w = std::min(roi_width_, img_width);
+            int actual_roi_h = std::min(roi_height_, img_height);
+            
+            // Calculate top-left corner to center the ROI
+            int x = (img_width - actual_roi_w) / 2;
+            int y = (img_height - actual_roi_h) / 2;
+            
+            roi_rect = cv::Rect(x, y, actual_roi_w, actual_roi_h);
+            
+            // Clamp ROI to valid image bounds (safety check)
+            roi_rect.x = std::max(0, roi_rect.x);
+            roi_rect.y = std::max(0, roi_rect.y);
+            roi_rect.width = std::min(roi_rect.width, img_width - roi_rect.x);
+            roi_rect.height = std::min(roi_rect.height, img_height - roi_rect.y);
+            
+            // Extract ROI
+            roi_image = image(roi_rect);
+            
+            RCLCPP_DEBUG(this->get_logger(), "ROI center mode: rect=[%d,%d,%d,%d]", 
+                        roi_rect.x, roi_rect.y, roi_rect.width, roi_rect.height);
+        } else {
+            // Full image mode: use entire image as ROI
+            roi_image = image;
+            roi_rect = cv::Rect(0, 0, image.cols, image.rows);
+            
+            RCLCPP_DEBUG(this->get_logger(), "ROI full mode: using entire image");
+        }
+        
+        // Store ROI rect for visualization
+        roi_rect_ = roi_rect;
+        
+        // Perform inference on ROI image
         auto detection_results = openvino_infer_->infer(
-            image, 
+            roi_image, 
             cv::Size(input_width_, input_height_), 
             0,  // my_color (not used in current implementation)
             startup_
@@ -126,6 +175,14 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             return;
         }
         
+        // Map detection results from ROI coordinates back to full image coordinates
+        for (auto& detection : detection_results) {
+            detection.center_point.x += roi_rect.x;
+            detection.center_point.y += roi_rect.y;
+            detection.box.x += roi_rect.x;
+            detection.box.y += roi_rect.y;
+        }
+        
         // Convert detection results to ROS message
         auto target_array_msg = convertToRosMessage(detection_results, msg->header);
         
@@ -135,7 +192,7 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
         // Publish debug image if enabled
         if (publish_debug_image_ && debug_image_publisher_) {
             cv::Mat debug_image = cv_ptr->image.clone();
-            drawDebugImage(debug_image, detection_results);
+            drawDebugImage(debug_image, detection_results, roi_rect);
             
             auto debug_msg = cv_bridge::CvImage(msg->header, "bgr8", debug_image).toImageMsg();
             debug_image_publisher_->publish(*debug_msg);
@@ -202,14 +259,39 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
 
 void ObjectDetectionOpenvinoNode::drawDebugImage(
     cv::Mat& image,
-    const std::vector<ROS2OpenvinoInfer::Light>& detections)
+    const std::vector<ROS2OpenvinoInfer::Light>& detections,
+    const cv::Rect& roi_rect)
 {
     // Define colors for different classes
     const cv::Scalar COLOR_GREEN(0, 255, 0);
     const cv::Scalar COLOR_RED(0, 0, 255);
     const cv::Scalar COLOR_BLUE(255, 0, 0);
     const cv::Scalar COLOR_YELLOW(0, 255, 255);
+    const cv::Scalar COLOR_CYAN(255, 255, 0);
     
+    // Draw ROI rectangle with thick cyan border
+    if (roi_rect.width > 0 && roi_rect.height > 0) {
+        cv::rectangle(image, roi_rect, COLOR_CYAN, 3);
+        
+        // Add ROI label
+        std::string roi_label = "ROI: " + std::to_string(roi_rect.width) + "x" + std::to_string(roi_rect.height);
+        int baseline = 0;
+        cv::Size label_size = cv::getTextSize(roi_label, cv::FONT_HERSHEY_SIMPLEX, 0.6, 2, &baseline);
+        
+        // Position ROI label at top-left corner of ROI
+        cv::Point roi_label_pos(roi_rect.x + 5, roi_rect.y + label_size.height + 5);
+        
+        // Draw background for ROI label
+        cv::rectangle(image, 
+                     cv::Point(roi_label_pos.x - 2, roi_label_pos.y - label_size.height - 2),
+                     cv::Point(roi_label_pos.x + label_size.width + 2, roi_label_pos.y + baseline + 2),
+                     COLOR_CYAN, -1);
+        
+        cv::putText(image, roi_label, roi_label_pos, 
+                   cv::FONT_HERSHEY_SIMPLEX, 0.6, cv::Scalar(0, 0, 0), 2);
+    }
+    
+    // Draw detection boxes (already in full image coordinates)
     for (const auto& detection : detections) {
         // Choose color based on detection ID
         cv::Scalar box_color;

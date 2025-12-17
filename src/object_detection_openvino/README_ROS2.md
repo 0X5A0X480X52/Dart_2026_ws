@@ -120,6 +120,69 @@ ros2 run object_detection_openvino object_detection_openvino_node \
 | detection_topic | string | "/detector/target2d_array" | 发布的检测结果话题名称 |
 | debug_image_topic | string | "/detector/debug_image" | 发布的调试图像话题名称 |
 | publish_debug_image | bool | false | 是否发布带有边界框和标签的调试图像 |
+| roi_mode | string | "full" | ROI（感兴趣区域）模式："full" 使用整个图像作为输入；"center" 使用图像中心的指定大小区域作为输入 |
+| roi_width | int | 1280 | 当 roi_mode 为 "center" 时的ROI宽度（对 "full" 模式无效） |
+| roi_height | int | 1024 | 当 roi_mode 为 "center" 时的ROI高度（对 "full" 模式无效） |
+
+## ROI（感兴趣区域）功能
+
+该节点支持两种ROI策略，允许你选择图像的哪一部分作为模型的输入：
+
+### 1. 全图模式（默认）
+
+```yaml
+roi_mode: "full"
+```
+
+使用完整的输入图像进行检测。这是默认行为，保持与之前版本的兼容性。
+
+### 2. 中心裁剪模式
+
+```yaml
+roi_mode: "center"
+roi_width: 1280
+roi_height: 1024
+```
+
+从输入图像的中心提取指定大小的区域进行检测。这在以下场景中很有用：
+
+- 目标通常出现在图像中心
+- 需要减少推理时间（较小的ROI可以提高处理速度）
+- 想要忽略图像边缘的干扰信息
+
+### ROI 可视化
+
+当启用 `publish_debug_image` 时，调试图像会显示：
+
+- **青色矩形框**：标识当前使用的ROI区域
+- **ROI尺寸标签**：显示ROI的实际宽度和高度
+- **检测框**：所有检测框的坐标都已映射回完整图像坐标系
+
+### ROI 使用示例
+
+```bash
+# 使用中心裁剪模式启动节点
+ros2 run object_detection_openvino object_detection_openvino_node \
+    --ros-args \
+    -p roi_mode:="center" \
+    -p roi_width:=800 \
+    -p roi_height:=600 \
+    -p publish_debug_image:=true
+
+# 或在 params.yaml 中配置
+object_detection_openvino_node:
+  ros__parameters:
+    roi_mode: "center"
+    roi_width: 1280
+    roi_height: 1024
+    publish_debug_image: true
+```
+
+### 注意事项
+
+- 如果指定的ROI尺寸大于输入图像，ROI会自动裁剪到图像边界
+- 所有发布的检测结果（包括在 `Target2DArray` 消息中的坐标）都已映射回完整图像的坐标系
+- ROI裁剪不影响模型输入尺寸（`input_width` 和 `input_height`），ROI图像会被缩放到模型所需尺寸
 
 ## 检测结果格式
 

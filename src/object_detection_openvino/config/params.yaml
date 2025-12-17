@@ -9,6 +9,12 @@ object_detection_openvino_node:
     score_threshold: 0.5
     nms_threshold: 0.4
     
+    # ROI (Region of Interest) parameters
+    # roi_mode: "full" (use entire image) or "center" (crop centered region)
+    roi_mode: "full"
+    roi_width: 1280   # Width of ROI when roi_mode is "center" (ignored for "full")
+    roi_height: 1024  # Height of ROI when roi_mode is "center" (ignored for "full")
+    
     # Model file paths (update these paths according to your setup)
     xml_path: "./src/object_detection_openvino/config/openvino/Katrin.xml"
     bin_path: "./src/object_detection_openvino/config/openvino/Katrin.bin"
