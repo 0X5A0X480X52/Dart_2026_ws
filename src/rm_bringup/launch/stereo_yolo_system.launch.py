@@ -93,13 +93,16 @@ def generate_launch_description():
         parameters=[
             yolo_config,
             {
-                'image_topic': '/camera/left/image_raw',
+                'image_topic': '/camera_left/image_raw',
                 'detection_topic': '/detector/left/target2d_array',
                 'debug_image_topic': '/detector/left/debug_image',
+                'roi_mode': 'center',
+                'roi_width': 320,
+                'roi_height': 240,
             }
         ],
         remappings=[
-            ('image_raw', '/camera/left/image_raw'),
+            ('image_raw', '/camera_left/image_raw'),
             ('/detector/target2d_array', '/detector/left/target2d_array'),
             ('/detector/debug_image', '/detector/left/debug_image'),
         ]
@@ -115,13 +118,16 @@ def generate_launch_description():
         parameters=[
             yolo_config,
             {
-                'image_topic': '/camera/right/image_raw',
+                'image_topic': '/camera_right/image_raw',
                 'detection_topic': '/detector/right/target2d_array',
                 'debug_image_topic': '/detector/right/debug_image',
+                'roi_mode': 'center',
+                'roi_width': 320,
+                'roi_height': 240,
             }
         ],
         remappings=[
-            ('image_raw', '/camera/right/image_raw'),
+            ('image_raw', '/camera_right/image_raw'),
             ('/detector/target2d_array', '/detector/right/target2d_array'),
             ('/detector/debug_image', '/detector/right/debug_image'),
         ]
@@ -148,26 +154,26 @@ def generate_launch_description():
     )
     
     # 串口驱动节点
-    serial_driver_node = Node(
-        package='rm_serial_driver',
-        executable='rm_serial_driver_node',
-        name='serial_driver',
-        output='screen',
-        parameters=[
-            PathJoinSubstitution([
-                FindPackageShare('rm_serial_driver'),
-                'config',
-                'serial_driver_config.yaml'
-            ])
-        ],
-    )
+    # serial_driver_node = Node(
+    #     package='rm_serial_driver',
+    #     executable='serial_driver_node',
+    #     name='serial_driver',
+    #     output='screen',
+    #     parameters=[
+    #         PathJoinSubstitution([
+    #             FindPackageShare('rm_serial_driver'),
+    #             'config',
+    #             'serial_driver_params.yaml'
+    #         ])
+    #     ],
+    # )
     
     stage3 = TimerAction(
         period=10.0,  # 等待YOLO检测启动
         actions=[
             LogInfo(msg="=== Stage 3: 启动立体测距和串口驱动 ==="),
             stereo_yolo_distance_node,
-            serial_driver_node
+            # serial_driver_node
         ]
     )
     

@@ -3,12 +3,12 @@ stereo_yolo_distance:
     # 话题配置
     left_target_topic: "/detector/left/target2d_array"
     right_target_topic: "/detector/right/target2d_array"
-    left_camera_info_topic: "/camera/left/camera_info"
-    right_camera_info_topic: "/camera/right/camera_info"
+    left_camera_info_topic: "/camera_left/camera_info"
+    right_camera_info_topic: "/camera_right/camera_info"
     target3d_topic: "/stereo/target3d_array"
     
     # 匹配参数
-    min_height_iou: 0.5          # 最小高度IOU阈值（0-1）
+    min_height_iou: 0.05          # 最小高度IOU阈值（0-1）
     
     # 距离和视差范围
     max_distance: 10.0           # 最大有效距离（米）

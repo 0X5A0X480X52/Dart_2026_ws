@@ -88,6 +88,8 @@ void StereoYoloDistanceNode::leftTargetCallback(
 {
   std::lock_guard<std::mutex> lock(left_mutex_);
   latest_left_targets_ = msg;
+
+  RCLCPP_DEBUG(this->get_logger(), "Received left targets: count=%zu", msg->targets.size());
   
   // 触发匹配处理
   processMatching();
@@ -98,6 +100,8 @@ void StereoYoloDistanceNode::rightTargetCallback(
 {
   std::lock_guard<std::mutex> lock(right_mutex_);
   latest_right_targets_ = msg;
+
+  RCLCPP_DEBUG(this->get_logger(), "Received right targets: count=%zu", msg->targets.size());
   
   // 触发匹配处理
   processMatching();
@@ -145,6 +149,9 @@ void StereoYoloDistanceNode::processMatching()
     std::lock_guard<std::mutex> lock_right(right_mutex_);
     
     if (!latest_left_targets_ || !latest_right_targets_) {
+      RCLCPP_DEBUG(this->get_logger(), "Waiting for both left and right targets: left=%s, right=%s",
+                   latest_left_targets_ ? "ready" : "none",
+                   latest_right_targets_ ? "ready" : "none");
       return;  // 还没有接收到两侧的数据
     }
     
@@ -156,6 +163,8 @@ void StereoYoloDistanceNode::processMatching()
   if (fx_ <= 0 || baseline_ <= 0) {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 5000,
                          "Camera calibration not ready: fx=%.2f, baseline=%.3f", fx_, baseline_);
+    RCLCPP_DEBUG(this->get_logger(), "Left camera_info present=%s, right camera_info present=%s",
+                 left_camera_info_ ? "yes" : "no", right_camera_info_ ? "yes" : "no");
     return;
   }
 
@@ -167,10 +176,15 @@ void StereoYoloDistanceNode::processMatching()
   if (time_diff > 0.1) {  // 100ms 容差
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
                          "Large time difference between left and right detections: %.3f s", time_diff);
+    RCLCPP_DEBUG(this->get_logger(), "Left stamp: %u.%u, Right stamp: %u.%u",
+                 left_targets->header.stamp.sec, left_targets->header.stamp.nanosec,
+                 right_targets->header.stamp.sec, right_targets->header.stamp.nanosec);
   }
 
   // 当前假设只有一个目标
   if (left_targets->targets.empty() || right_targets->targets.empty()) {
+    RCLCPP_DEBUG(this->get_logger(), "No targets: left=%zu, right=%zu",
+                 left_targets->targets.size(), right_targets->targets.size());
     return;  // 至少一侧没有检测到目标
   }
 
@@ -186,7 +200,10 @@ void StereoYoloDistanceNode::processMatching()
   // 尝试匹配
   double height_iou = 0.0;
   if (!matchTargets(left_target, right_target, height_iou)) {
-    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f)", height_iou);
+    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%s), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%s)",
+                 height_iou,
+                 left_target.id, left_target.x, left_target.y, left_target.width, left_target.height, left_target.class_name.c_str(),
+                 right_target.id, right_target.x, right_target.y, right_target.width, right_target.height, right_target.class_name.c_str());
     return;
   }
 
@@ -206,6 +223,10 @@ void StereoYoloDistanceNode::processMatching()
                 target_3d.distance, 
                 target_3d.position.x, target_3d.position.y, target_3d.position.z,
                 height_iou);
+  }
+  else {
+    RCLCPP_WARN(this->get_logger(), "calculateDistance failed for matched targets: left.x=%.2f,right.x=%.2f,fx=%.2f,baseline=%.3f",
+                left_target.x, right_target.x, fx_, baseline_);
   }
 }
 
