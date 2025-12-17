@@ -86,24 +86,32 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
 void StereoYoloDistanceNode::leftTargetCallback(
   const rm_interfaces::msg::Target2DArray::ConstSharedPtr & msg)
 {
-  std::lock_guard<std::mutex> lock(left_mutex_);
-  latest_left_targets_ = msg;
+  // std::lock_guard<std::mutex> lock(left_mutex_);
+  // latest_left_targets_ = msg;
 
   RCLCPP_DEBUG(this->get_logger(), "Received left targets: count=%zu", msg->targets.size());
-  
-  // 触发匹配处理
+  {
+    std::lock_guard<std::mutex> lock(left_mutex_);
+    latest_left_targets_ = msg;
+  }
+
+  // 触发匹配处理（在释放左锁后调用，避免死锁）
   processMatching();
 }
 
 void StereoYoloDistanceNode::rightTargetCallback(
   const rm_interfaces::msg::Target2DArray::ConstSharedPtr & msg)
 {
-  std::lock_guard<std::mutex> lock(right_mutex_);
-  latest_right_targets_ = msg;
+  // std::lock_guard<std::mutex> lock(right_mutex_);
+  // latest_right_targets_ = msg;
 
   RCLCPP_DEBUG(this->get_logger(), "Received right targets: count=%zu", msg->targets.size());
-  
-  // 触发匹配处理
+  {
+    std::lock_guard<std::mutex> lock(right_mutex_);
+    latest_right_targets_ = msg;
+  }
+
+  // 触发匹配处理（在释放右锁后调用，避免死锁）
   processMatching();
 }
 

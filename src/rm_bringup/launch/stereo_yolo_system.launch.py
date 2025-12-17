@@ -154,26 +154,26 @@ def generate_launch_description():
     )
     
     # 串口驱动节点
-    # serial_driver_node = Node(
-    #     package='rm_serial_driver',
-    #     executable='serial_driver_node',
-    #     name='serial_driver',
-    #     output='screen',
-    #     parameters=[
-    #         PathJoinSubstitution([
-    #             FindPackageShare('rm_serial_driver'),
-    #             'config',
-    #             'serial_driver_params.yaml'
-    #         ])
-    #     ],
-    # )
+    serial_driver_node = Node(
+        package='rm_serial_driver',
+        executable='serial_driver_node',
+        name='serial_driver',
+        output='screen',
+        parameters=[
+            PathJoinSubstitution([
+                FindPackageShare('rm_serial_driver'),
+                'config',
+                'serial_driver_params.yaml'
+            ])
+        ],
+    )
     
     stage3 = TimerAction(
         period=10.0,  # 等待YOLO检测启动
         actions=[
             LogInfo(msg="=== Stage 3: 启动立体测距和串口驱动 ==="),
             stereo_yolo_distance_node,
-            # serial_driver_node
+            serial_driver_node
         ]
     )
     

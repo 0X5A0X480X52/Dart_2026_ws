@@ -1,10 +1,10 @@
 /**:
   ros__parameters:
     # 订阅的来自stereo_distance_estimator节点的话题
-    target2d_topic_name: "/detector/target2d_array"
+    target2d_topic_name: "/detector/left/target2d_array"
 
     # 订阅的来自distance_filter_node节点的话题
-    receive_topic_name: "/target"
+    receive_topic_name: "/stereo/target3d_array"
 
     # 从可视化节点订阅的包含用户输入数据的话题，对应接收器仅当debug_mode为true时工作
     receive_debug_data_topic_name: "/debug/processed_data"
