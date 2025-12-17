@@ -54,7 +54,7 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("detection_topic", "/detector/target2d_array");
     this->declare_parameter("debug_image_topic", "/detector/debug_image");
     this->declare_parameter("publish_debug_image", true);
-    this->declare_parameter("roi_mode", "full");
+    this->declare_parameter("roi_mode", "center");
     this->declare_parameter("roi_width", 1280);
     this->declare_parameter("roi_height", 1024);
     

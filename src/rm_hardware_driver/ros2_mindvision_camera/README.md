@@ -45,9 +45,9 @@ To build from source, clone the latest version from this repository into your co
 
   ```bash
   ros2 run camera_calibration cameracalibrator \
-      --size 11x8 --square 0.01 \
+      --size 11x8 --square 0.045 \
       --approximate 0.1 \
-      right:=/camera_left/image_raw left:=/camera_right/image_raw \
+      left:=/camera_left/image_raw right:=/camera_right/image_raw \
       left_camera:=/camera_left right_camera:=/camera_right stereo:=true
   ```
 

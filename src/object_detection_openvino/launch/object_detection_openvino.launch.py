@@ -5,6 +5,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     
@@ -71,14 +72,45 @@ def generate_launch_description():
             default_value='true',
             description='Whether to publish debug images'
         ),
+        DeclareLaunchArgument(
+            'roi_mode',
+            default_value='center',
+            description='ROI mode: full or center'
+        ),
+        DeclareLaunchArgument(
+            'roi_width',
+            default_value='320',
+            description='ROI width when roi_mode is center'
+        ),
+        DeclareLaunchArgument(
+            'roi_height',
+            default_value='240',
+            description='ROI height when roi_mode is center'
+        ),
         
+
         Node(
             package='object_detection_openvino',
             executable='object_detection_openvino_node',
             name='object_detection_openvino_node',
-            parameters=[{
+            parameters=[
                 LaunchConfiguration('params_file'),
-            }],
+                {
+                    'roi_mode': LaunchConfiguration('roi_mode'),
+                    'roi_width': ParameterValue(
+                        LaunchConfiguration('roi_width'),
+                        value_type=int
+                    ),
+                    'roi_height': ParameterValue(
+                        LaunchConfiguration('roi_height'),
+                        value_type=int
+                    ),
+                    'publish_debug_image': ParameterValue(
+                        LaunchConfiguration('publish_debug_image'),
+                        value_type=bool
+                    ),
+                }
+            ],
             remappings=[
                 ('image_raw', LaunchConfiguration('image_topic')),
             ],
