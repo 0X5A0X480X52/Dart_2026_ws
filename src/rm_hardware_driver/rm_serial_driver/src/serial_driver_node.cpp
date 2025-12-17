@@ -21,6 +21,7 @@
 #include <cstdint>
 #include <memory>
 #include <thread>
+#include <limits>
 // ros2
 #include <Eigen/Geometry>
 #include <rclcpp/rclcpp.hpp>
@@ -139,9 +140,15 @@ void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray:
 }
 
 rm_interfaces::msg::Target2D SerialDriverNode::filterateTarget2D(const std::vector<rm_interfaces::msg::Target2D> &targets) {
-  float max_confidence = FLT_MIN;
-  size_t idx = -1;
-  for (size_t i=0; i<targets.size(); i++) {
+  // Guard against empty input
+  if (targets.empty()) {
+    return rm_interfaces::msg::Target2D();
+  }
+
+  // Find the index with the highest confidence
+  float max_confidence = -std::numeric_limits<float>::infinity();
+  size_t idx = 0;
+  for (size_t i = 0; i < targets.size(); ++i) {
     if (targets[i].confidence > max_confidence) {
       max_confidence = targets[i].confidence;
       idx = i;
@@ -181,16 +188,24 @@ void SerialDriverNode::targetCallback(const rm_interfaces::msg::Target3DArray::S
     // Create SerialSendData with debug mode setting
     SerialSendData send_data;
 
-    send_data.Distance = msg->targets[0].distance;
+    // If no targets, send distance = -1 and mark status
+    if (msg->targets.empty()) {
+      FYT_WARN("serial_driver_node", "Received empty Target3DArray, sending Distance=-1");
+      send_data.Distance = -1.0f;
+      has_target_ = false;
+      std::lock_guard<std::mutex> lock(target_2d_mutex_);
+      send_data.Pixel_Error = 0;  // no valid pixel error when no target
+    } else {
+      send_data.Distance = msg->targets[0].distance;
+      has_target_ = true;
 
-    {
       std::lock_guard<std::mutex> lock(target_2d_mutex_);
       send_data.Pixel_Error = curr_target_2d_.x - desired_pos_x_;
     }
 
     send_data.Debug_Mode = debug_mode_;
 
-    if (debug_mode_ && latest_debug_data_ != nullptr) {
+    if (debug_mode_ && latest_debug_data_ != nullptr && !latest_debug_data_->dart_set.empty()) {
       std::lock_guard<std::mutex> lock(debug_data_mutex_);
       send_data.Shoot_Force_Set = latest_debug_data_->dart_set[0];
     }

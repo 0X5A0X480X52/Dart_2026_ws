@@ -100,6 +100,9 @@ private:
   rm_interfaces::msg::Target2D filterateTarget2D(const std::vector<rm_interfaces::msg::Target2D> &targets);
   rm_interfaces::msg::Target2D curr_target_2d_;
   std::mutex target_2d_mutex_;
+
+  // 状态变量：表示当前是否存在目标（true: 有目标；false: 无目标）
+  bool has_target_ = false;
 };
 
 #endif  // SERIAL_DRIVER_SERIAL_DRIVER_NODE_HPP_

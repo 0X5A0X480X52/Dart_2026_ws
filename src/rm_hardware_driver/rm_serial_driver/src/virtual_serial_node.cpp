@@ -160,9 +160,13 @@ private:
             // 简单地使用第一个目标的距离作为模拟数据
             send_data.Distance = static_cast<float>(msg->targets[0].position.x);
             send_data.Pixel_Error = static_cast<int>(msg->targets[0].position.y * 100);
+        } else {
+            // 无目标时，按协议要求将距离设为 -1
+            send_data.Distance = -1.0f;
+            send_data.Pixel_Error = 0;
         }
 
-        if (debug_mode_ && latest_debug_data_ != nullptr) {
+        if (debug_mode_ && latest_debug_data_ != nullptr && !latest_debug_data_->dart_set.empty()) {
             std::lock_guard<std::mutex> lock(debug_data_mutex_);
             send_data.Shoot_Force_Set = latest_debug_data_->dart_set[0];
         }
