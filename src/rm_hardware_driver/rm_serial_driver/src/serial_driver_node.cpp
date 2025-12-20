@@ -140,28 +140,33 @@ SerialDriverNode::~SerialDriverNode() {
 }
 
 void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray::SharedPtr msg) {
+  // CRITICAL: Outer try-catch to prevent destructor crashes from killing the process
+  // Even if we detect corruption and return early, the shared_ptr destructor can crash
+  // when trying to free corrupted memory. This is a last-resort safety net.
   try {
-    // CRITICAL: Validate message pointer and size BEFORE accessing any fields
-    // This catches corruption from deserialization before it causes crashes
-    if (msg == nullptr) {
-      FYT_WARN("serial_driver_node", "Received null Target2DArray message");
-      return;
-    }
+    // Inner validation block
+    try {
+      // CRITICAL: Validate message pointer and size BEFORE accessing any fields
+      // This catches corruption from deserialization before it causes crashes
+      if (msg == nullptr) {
+        FYT_WARN("serial_driver_node", "Received null Target2DArray message");
+        return;
+      }
 
-    // Check for obviously corrupted array size (> 1MB would be ~30k targets, unrealistic)
-    // Note: This check happens AFTER deserialization, so corruption may still cause issues
-    // during message destruction. The real fix is in the publisher (see object_detection_openvino).
-    static constexpr size_t MAX_REASONABLE_TARGETS = 1000;
-    if (msg->targets.size() > MAX_REASONABLE_TARGETS) {
-      FYT_WARN("serial_driver_node", "Target2DArray size unreasonable ({}); ignoring message to prevent crash", 
-               msg->targets.size());
-      // Return immediately - do NOT access msg->targets or any other fields
-      // However, the shared_ptr will still be destroyed, potentially triggering the crash
-      // if the vector was corrupted during deserialization
-      return;
-    }
+      // Check for obviously corrupted array size (> 1MB would be ~30k targets, unrealistic)
+      // Note: This check happens AFTER deserialization, so corruption may still cause issues
+      // during message destruction. The real fix is in the publisher (see object_detection_openvino).
+      static constexpr size_t MAX_REASONABLE_TARGETS = 1000;
+      if (msg->targets.size() > MAX_REASONABLE_TARGETS) {
+        FYT_WARN("serial_driver_node", "Target2DArray size unreasonable ({}); ignoring message to prevent crash", 
+                 msg->targets.size());
+        // Return immediately - do NOT access msg->targets or any other fields
+        // However, the shared_ptr will still be destroyed, potentially triggering the crash
+        // if the vector was corrupted during deserialization
+        return;
+      }
 
-    const auto &targets = msg->targets;
+      const auto &targets = msg->targets;
 
     // Guard: empty list -> clear current target
     if (targets.empty()) {
@@ -172,22 +177,28 @@ void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray:
       return;
     }
 
-    // Guard: protect against unreasonable sizes (likely corrupted message)
-    constexpr size_t kMaxReasonableTargets = 1000;
-    if (targets.size() > kMaxReasonableTargets) {
-      FYT_WARN("serial_driver_node", "Target2DArray size unreasonable ({}); ignoring message", targets.size());
-      return;
-    }
-
     // Safe path
     auto target = filterateTarget2D(targets);
     std::lock_guard<std::mutex> lock(target_2d_mutex_);
     curr_target_2d_ = target;
     has_target_ = true;
+    
+    } catch (const std::exception &e) {
+      FYT_ERROR("serial_driver_node", "Exception in target2dCallback inner: {}", e.what());
+    } catch (...) {
+      FYT_ERROR("serial_driver_node", "Unknown exception in target2dCallback inner");
+    }
+    
+    // Note: If we reach here with a corrupted message, the shared_ptr destructor
+    // may still crash when this function returns. The outer try-catch attempts
+    // to handle that, but destructor exceptions are notoriously hard to catch.
+    
   } catch (const std::exception &e) {
-    FYT_ERROR("serial_driver_node", "Exception in target2dCallback: {}", e.what());
+    FYT_ERROR("serial_driver_node", "FATAL: Exception during message destruction: {}", e.what());
+    // Continue running despite corruption - don't let one bad message kill the node
   } catch (...) {
-    FYT_ERROR("serial_driver_node", "Unknown exception in target2dCallback");
+    FYT_ERROR("serial_driver_node", "FATAL: Unknown exception during message destruction");
+    // Continue running
   }
 }
 
