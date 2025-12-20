@@ -95,6 +95,12 @@ void SerialDriverNode::init() {
       "~/get_desired_pos_x",
       std::bind(&SerialDriverNode::handleGetDesiredPosX, this, std::placeholders::_1, std::placeholders::_2));
 
+  // Initialize curr_target_2d_ to prevent uninitialized access
+  curr_target_2d_ = rm_interfaces::msg::Target2D();
+  curr_target_2d_.x = 0.0f;
+  curr_target_2d_.y = 0.0f;
+  curr_target_2d_.confidence = 0.0f;
+
       // Create Protocol
   protocol_ = ProtocolFactory::createProtocol(protocol_type, port_name, enable_data_print);
   if (protocol_ == nullptr) {
