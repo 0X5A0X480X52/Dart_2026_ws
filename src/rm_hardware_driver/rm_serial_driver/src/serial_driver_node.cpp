@@ -140,9 +140,34 @@ SerialDriverNode::~SerialDriverNode() {
 }
 
 void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray::SharedPtr msg) {
-  auto target = filterateTarget2D(msg->targets);
+  if (msg == nullptr) {
+    FYT_WARN("serial_driver_node", "Received null Target2DArray message");
+    return;
+  }
+
+  const auto &targets = msg->targets;
+
+  // Guard: empty list -> clear current target
+  if (targets.empty()) {
+    std::lock_guard<std::mutex> lock(target_2d_mutex_);
+    curr_target_2d_ = rm_interfaces::msg::Target2D();
+    has_target_ = false;
+    FYT_DEBUG("serial_driver_node", "Received empty Target2DArray; cleared current target");
+    return;
+  }
+
+  // Guard: protect against unreasonable sizes (likely corrupted message)
+  constexpr size_t kMaxReasonableTargets = 1000;
+  if (targets.size() > kMaxReasonableTargets) {
+    FYT_WARN("serial_driver_node", "Target2DArray size unreasonable (%zu); ignoring message", targets.size());
+    return;
+  }
+
+  // Safe path
+  auto target = filterateTarget2D(targets);
   std::lock_guard<std::mutex> lock(target_2d_mutex_);
   curr_target_2d_ = target;
+  has_target_ = true;
 }
 
 rm_interfaces::msg::Target2D SerialDriverNode::filterateTarget2D(const std::vector<rm_interfaces::msg::Target2D> &targets) {
