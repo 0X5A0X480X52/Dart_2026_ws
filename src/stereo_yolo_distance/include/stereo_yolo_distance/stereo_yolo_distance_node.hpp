@@ -78,6 +78,7 @@ private:
   double min_distance_;         // 最小有效距离（米）
   double max_disparity_;        // 最大视差（像素）
   double min_disparity_;        // 最小视差（像素）
+  double max_time_diff_;        // 左右检测时间差最大容忍（秒）
   
   // 相机内参（从camera_info获取或配置文件读取）
   double fx_;                   // 焦距

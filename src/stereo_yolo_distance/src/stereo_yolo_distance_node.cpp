@@ -19,6 +19,7 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   this->declare_parameter("target3d_topic", "/stereo/target3d_array");
   
   this->declare_parameter("min_height_iou", 0.5);
+  this->declare_parameter("max_time_diff", 0.2);
   this->declare_parameter("max_distance", 10.0);
   this->declare_parameter("min_distance", 0.5);
   this->declare_parameter("max_disparity", 300.0);
@@ -37,6 +38,7 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   target3d_topic_ = this->get_parameter("target3d_topic").as_string();
   
   min_height_iou_ = this->get_parameter("min_height_iou").as_double();
+  max_time_diff_ = this->get_parameter("max_time_diff").as_double();
   max_distance_ = this->get_parameter("max_distance").as_double();
   min_distance_ = this->get_parameter("min_distance").as_double();
   max_disparity_ = this->get_parameter("max_disparity").as_double();
@@ -181,7 +183,7 @@ void StereoYoloDistanceNode::processMatching()
     rclcpp::Time(left_targets->header.stamp).seconds() - 
     rclcpp::Time(right_targets->header.stamp).seconds());
   
-  if (time_diff > 0.1) {  // 100ms 容差
+  if (time_diff > max_time_diff_) {
     RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
                          "Large time difference between left and right detections: %.3f s", time_diff);
     RCLCPP_DEBUG(this->get_logger(), "Left stamp: %u.%u, Right stamp: %u.%u",
