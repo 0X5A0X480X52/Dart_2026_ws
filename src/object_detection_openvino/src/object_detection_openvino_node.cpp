@@ -213,28 +213,31 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
     const std_msgs::msg::Header& header)
 {
     rm_interfaces::msg::Target2DArray target_array;
+
+    // Header：整体赋值（一次性、异常安全）
     target_array.header = header;
-    
+
+    // 预分配 vector，避免反复 realloc / 拷贝
+    target_array.targets.reserve(detections.size());
+
     for (const auto& detection : detections) {
-        rm_interfaces::msg::Target2D target;
-        
-        // Set header for each target (deep copy to avoid memory issues)
+        // 原地构造，避免临时对象 + push_back 拷贝
+        auto& target = target_array.targets.emplace_back();
+
+        // Header：逐字段拷贝，避免字符串内存共享问题
         target.header.stamp = header.stamp;
         target.header.frame_id = header.frame_id;
-        
-        // Set position (center point)
+
+        // ---- 几何信息 ----
         target.x = static_cast<float>(detection.center_point.x);
         target.y = static_cast<float>(detection.center_point.y);
-        
-        // Set bounding box dimensions
-        target.width = static_cast<float>(detection.box.width);
+        target.width  = static_cast<float>(detection.box.width);
         target.height = static_cast<float>(detection.box.height);
-        
-        // Set confidence score
+
+        // ---- 置信度 ----
         target.confidence = static_cast<float>(detection.score);
-        
-        // Set class ID based on detection id
-        // 类别映射：0=armor_blue, 1=armor_red, 8=armor, 其他=unknown(-1)
+
+        // ---- 类别映射 ----
         switch (detection.id) {
             case 0:
                 target.class_id = 0;  // armor_blue
@@ -246,20 +249,18 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
                 target.class_id = 8;  // armor
                 break;
             default:
-                target.class_id = -1;  // unknown
+                target.class_id = 255;  // unknown（更安全 than -1）
                 break;
         }
-        
-        // Set unique ID
+
+        // ---- 跟踪 ID ----
         target.id = detection.id;
-        
-        // Initialize is_filtered flag
+
+        // ---- 滤波标志 ----
         target.is_filtered = false;
-        
-        target_array.targets.push_back(target);
     }
-    
-    return target_array;
+
+    return target_array;  // RVO / NRVO，不拷贝
 }
 
 void ObjectDetectionOpenvinoNode::drawDebugImage(
