@@ -218,8 +218,9 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
     for (const auto& detection : detections) {
         rm_interfaces::msg::Target2D target;
         
-        // Set header for each target
-        target.header = header;
+        // Set header for each target (deep copy to avoid memory issues)
+        target.header.stamp = header.stamp;
+        target.header.frame_id = header.frame_id;
         
         // Set position (center point)
         target.x = static_cast<float>(detection.center_point.x);
@@ -251,6 +252,9 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
         
         // Set unique ID
         target.id = detection.id;
+        
+        // Initialize is_filtered flag
+        target.is_filtered = false;
         
         target_array.targets.push_back(target);
     }
