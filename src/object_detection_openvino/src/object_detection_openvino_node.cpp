@@ -220,7 +220,7 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
 {
     rm_interfaces::msg::Target2DArray target_array;
 
-    // Header：整体赋值（一次性、异常安全）
+    // Header：整体赋值（Target2DArray 的 header 已足够）
     target_array.header = header;
 
     // 预分配 vector，避免反复 realloc / 拷贝
@@ -230,9 +230,8 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
         // 原地构造，避免临时对象 + push_back 拷贝
         auto& target = target_array.targets.emplace_back();
 
-        // Header：逐字段拷贝，避免字符串内存共享问题
-        target.header.stamp = header.stamp;
-        target.header.frame_id = header.frame_id;
+        // 不设置每个 target 的 header（Target2DArray 已有，避免冗余序列化）
+        // target.header 保持默认构造状态
 
         // ---- 几何信息 ----
         target.x = static_cast<float>(detection.center_point.x);
@@ -255,7 +254,7 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
                 target.class_id = 8;  // armor
                 break;
             default:
-                target.class_id = 255;  // unknown（更安全 than -1）
+                target.class_id = 255;  // unknown
                 break;
         }
 
