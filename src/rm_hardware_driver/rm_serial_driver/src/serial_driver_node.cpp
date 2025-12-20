@@ -141,8 +141,23 @@ SerialDriverNode::~SerialDriverNode() {
 
 void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray::SharedPtr msg) {
   try {
+    // CRITICAL: Validate message pointer and size BEFORE accessing any fields
+    // This catches corruption from deserialization before it causes crashes
     if (msg == nullptr) {
       FYT_WARN("serial_driver_node", "Received null Target2DArray message");
+      return;
+    }
+
+    // Check for obviously corrupted array size (> 1MB would be ~30k targets, unrealistic)
+    // Note: This check happens AFTER deserialization, so corruption may still cause issues
+    // during message destruction. The real fix is in the publisher (see object_detection_openvino).
+    static constexpr size_t MAX_REASONABLE_TARGETS = 1000;
+    if (msg->targets.size() > MAX_REASONABLE_TARGETS) {
+      FYT_WARN("serial_driver_node", "Target2DArray size unreasonable ({}); ignoring message to prevent crash", 
+               msg->targets.size());
+      // Return immediately - do NOT access msg->targets or any other fields
+      // However, the shared_ptr will still be destroyed, potentially triggering the crash
+      // if the vector was corrupted during deserialization
       return;
     }
 

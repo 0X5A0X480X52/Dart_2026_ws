@@ -188,8 +188,14 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             detection.box.y += roi_rect.y;
         }
         
+        // CRITICAL: Make deep copy of header to avoid race conditions with concurrent callbacks
+        // The msg->header.frame_id (std::string) must not be shared across threads
+        std_msgs::msg::Header header_copy;
+        header_copy.stamp = msg->header.stamp;
+        header_copy.frame_id = std::string(msg->header.frame_id);  // Force deep copy of string
+        
         // Convert detection results to ROS message
-        auto target_array_msg = convertToRosMessage(detection_results, msg->header);
+        auto target_array_msg = convertToRosMessage(detection_results, header_copy);
         
         // Publish detection results (do this ASAP for synchronization)
         target_publisher_->publish(target_array_msg);
@@ -200,7 +206,8 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             cv::Mat debug_image = image.clone();
             drawDebugImage(debug_image, detection_results, roi_rect);
             
-            auto debug_msg = cv_bridge::CvImage(msg->header, "bgr8", debug_image).toImageMsg();
+            // Use the same deep-copied header for debug image
+            auto debug_msg = cv_bridge::CvImage(header_copy, "bgr8", debug_image).toImageMsg();
             debug_image_publisher_->publish(*debug_msg);
         }
         
