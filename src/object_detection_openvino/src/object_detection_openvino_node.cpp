@@ -114,10 +114,15 @@ void ObjectDetectionOpenvinoNode::loadModel()
 void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
     try {
-        // Convert ROS image message to OpenCV Mat
-        cv_bridge::CvImagePtr cv_ptr;
-        cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
-        cv::Mat image = cv_ptr->image;
+        // Convert ROS image message to OpenCV Mat (use share to avoid copy when possible)
+        cv_bridge::CvImageConstPtr cv_ptr;
+        try {
+            cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::BGR8);
+        } catch (const cv_bridge::Exception&) {
+            // Fallback to copy if share fails
+            cv_ptr = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::BGR8);
+        }
+        const cv::Mat& image = cv_ptr->image;
         
         // Prepare ROI image and record ROI rectangle
         cv::Mat roi_image;
@@ -144,7 +149,7 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             roi_rect.width = std::min(roi_rect.width, img_width - roi_rect.x);
             roi_rect.height = std::min(roi_rect.height, img_height - roi_rect.y);
             
-            // Extract ROI
+            // Extract ROI (shallow copy, no data duplication)
             roi_image = image(roi_rect);
             
             RCLCPP_DEBUG(this->get_logger(), "ROI center mode: rect=[%d,%d,%d,%d]", 
@@ -186,12 +191,13 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
         // Convert detection results to ROS message
         auto target_array_msg = convertToRosMessage(detection_results, msg->header);
         
-        // Publish detection results
+        // Publish detection results (do this ASAP for synchronization)
         target_publisher_->publish(target_array_msg);
         
-        // Publish debug image if enabled
+        // Publish debug image if enabled (after main publish to minimize delay)
         if (publish_debug_image_ && debug_image_publisher_) {
-            cv::Mat debug_image = cv_ptr->image.clone();
+            // Only clone when necessary for debug visualization
+            cv::Mat debug_image = image.clone();
             drawDebugImage(debug_image, detection_results, roi_rect);
             
             auto debug_msg = cv_bridge::CvImage(msg->header, "bgr8", debug_image).toImageMsg();
