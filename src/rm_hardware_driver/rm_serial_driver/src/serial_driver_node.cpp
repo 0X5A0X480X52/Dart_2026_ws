@@ -159,7 +159,7 @@ void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray:
   // Guard: protect against unreasonable sizes (likely corrupted message)
   constexpr size_t kMaxReasonableTargets = 1000;
   if (targets.size() > kMaxReasonableTargets) {
-    FYT_WARN("serial_driver_node", "Target2DArray size unreasonable (%zu); ignoring message", targets.size());
+    FYT_WARN("serial_driver_node", "Target2DArray size unreasonable ({}); ignoring message", targets.size());
     return;
   }
 
