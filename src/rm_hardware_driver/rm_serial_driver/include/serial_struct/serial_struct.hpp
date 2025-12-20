@@ -20,6 +20,7 @@ struct SerialSendData {
     // 设定的发射拉力值
     int Shoot_Force_Set;
 };
+#pragma pack(pop)
 
 #pragma pack(push, 1)
 struct SerialReceiveData {
@@ -32,5 +33,6 @@ struct SerialReceiveData {
     //发射速度
     float Shoot_Vel;
 };
+#pragma pack(pop)
 
 #endif

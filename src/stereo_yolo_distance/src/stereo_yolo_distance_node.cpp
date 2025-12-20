@@ -19,7 +19,7 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   this->declare_parameter("target3d_topic", "/stereo/target3d_array");
   
   this->declare_parameter("min_height_iou", 0.5);
-  this->declare_parameter("max_time_diff", 0.2);
+  this->declare_parameter("max_time_diff", 0.3);
   this->declare_parameter("max_distance", 10.0);
   this->declare_parameter("min_distance", 0.5);
   this->declare_parameter("max_disparity", 300.0);
