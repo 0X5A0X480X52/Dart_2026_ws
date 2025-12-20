@@ -208,10 +208,10 @@ void StereoYoloDistanceNode::processMatching()
   // 尝试匹配
   double height_iou = 0.0;
   if (!matchTargets(left_target, right_target, height_iou)) {
-    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%s), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%s)",
+    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d)",
                  height_iou,
-                 left_target.id, left_target.x, left_target.y, left_target.width, left_target.height, left_target.class_name.c_str(),
-                 right_target.id, right_target.x, right_target.y, right_target.width, right_target.height, right_target.class_name.c_str());
+                 left_target.id, left_target.x, left_target.y, left_target.width, left_target.height, left_target.class_id,
+                 right_target.id, right_target.x, right_target.y, right_target.width, right_target.height, right_target.class_id);
     return;
   }
 
@@ -254,9 +254,9 @@ bool StereoYoloDistanceNode::matchTargets(
   }
 
   // 可选：检查类别是否一致
-  if (left_target.class_name != right_target.class_name) {
-    RCLCPP_DEBUG(this->get_logger(), "Class mismatch: %s vs %s",
-                 left_target.class_name.c_str(), right_target.class_name.c_str());
+  if (left_target.class_id != right_target.class_id) {
+    RCLCPP_DEBUG(this->get_logger(), "Class mismatch: %d vs %d",
+                 left_target.class_id, right_target.class_id);
     return false;
   }
 
@@ -349,7 +349,7 @@ bool StereoYoloDistanceNode::calculateDistance(
   target_3d.position.z = z;
   target_3d.distance = static_cast<float>(depth);
   target_3d.confidence = std::min(left_target.confidence, right_target.confidence);
-  target_3d.class_name = left_target.class_name;
+  target_3d.class_id = left_target.class_id;
   target_3d.id = left_target.id;
   target_3d.is_filtered = false;
 

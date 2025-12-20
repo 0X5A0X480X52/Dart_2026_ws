@@ -154,7 +154,7 @@ void StereoDistanceEstimatorNode::target2dCallback(
         target3d.position = point_3d;
         target3d.distance = distance;
         target3d.confidence = target2d.confidence;
-        target3d.class_name = target2d.class_name;
+        target3d.class_id = target2d.class_id;
         target3d.id = target2d.id;
         target3d.is_filtered = false;  // raw 数据
 

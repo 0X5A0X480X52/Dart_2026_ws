@@ -10,8 +10,8 @@ float32 distance
 # 检测置信度
 float32 confidence
 
-# 目标类别
-string class_name
+# 目标类别 ID（0=未知, 1=装甲板, 2=能量机关等，根据实际定义）
+int32 class_id
 
 # 目标唯一 ID（可选，跟踪使用）
 int32 id

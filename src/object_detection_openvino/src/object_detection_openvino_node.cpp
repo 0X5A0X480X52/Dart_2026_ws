@@ -232,19 +232,20 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
         // Set confidence score
         target.confidence = static_cast<float>(detection.score);
         
-        // Set class name based on detection id
+        // Set class ID based on detection id
+        // 类别映射：0=armor_blue, 1=armor_red, 8=armor, 其他=unknown(-1)
         switch (detection.id) {
             case 0:
-                target.class_name = "armor_blue";
+                target.class_id = 0;  // armor_blue
                 break;
             case 1:
-                target.class_name = "armor_red";
+                target.class_id = 1;  // armor_red
                 break;
             case 8:
-                target.class_name = "armor";
+                target.class_id = 8;  // armor
                 break;
             default:
-                target.class_name = "unknown";
+                target.class_id = -1;  // unknown
                 break;
         }
         

@@ -8,4 +8,4 @@ int32 id
 Target2D[] views
 
 # 目标类别
-string class_name
+int32 class_id
