@@ -47,12 +47,19 @@ def generate_launch_description():
         default_value='/stereo/target3d_array',
         description='Output 3D target topic'
     )
+
+    max_time_diff_arg = DeclareLaunchArgument(
+        'max_time_diff',
+        default_value='0.2',
+        description='Max allowed time difference between left and right detections (seconds)'
+    )
     
     # Get launch configuration
     config_file = LaunchConfiguration('config_file')
     left_target_topic = LaunchConfiguration('left_target_topic')
     right_target_topic = LaunchConfiguration('right_target_topic')
     target3d_topic = LaunchConfiguration('target3d_topic')
+    max_time_diff = LaunchConfiguration('max_time_diff')
     
     # Create stereo YOLO distance node
     stereo_yolo_distance_node = Node(
@@ -66,6 +73,7 @@ def generate_launch_description():
                 'left_target_topic': left_target_topic,
                 'right_target_topic': right_target_topic,
                 'target3d_topic': target3d_topic,
+                'max_time_diff': max_time_diff,
             }
         ],
     )
@@ -75,5 +83,6 @@ def generate_launch_description():
         left_target_topic_arg,
         right_target_topic_arg,
         target3d_topic_arg,
+        max_time_diff_arg,
         stereo_yolo_distance_node,
     ])
