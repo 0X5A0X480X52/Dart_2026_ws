@@ -14,6 +14,9 @@ object_detection_openvino_node:
     roi_mode: "center"
     roi_width: 320   # Width of ROI when roi_mode is "center" (ignored for "full")
     roi_height: 240  # Height of ROI when roi_mode is "center" (ignored for "full")
+    # Center pixel for ROI when roi_mode is "center" (-1 = image center)
+    center_x: -1
+    center_y: -1
     
     # Model file paths (update these paths according to your setup)
     xml_path: "./src/object_detection_openvino/config/openvino/Katrin.xml"

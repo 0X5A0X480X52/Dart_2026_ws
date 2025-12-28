@@ -57,6 +57,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("roi_mode", "center");
     this->declare_parameter("roi_width", 1280);
     this->declare_parameter("roi_height", 1024);
+    this->declare_parameter("center_x", -1);
+    this->declare_parameter("center_y", -1);
     
     mode_ = this->get_parameter("mode").as_string();
     input_width_ = this->get_parameter("input_width").as_int();
@@ -73,6 +75,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     roi_mode_ = this->get_parameter("roi_mode").as_string();
     roi_width_ = this->get_parameter("roi_width").as_int();
     roi_height_ = this->get_parameter("roi_height").as_int();
+    center_x_ = this->get_parameter("center_x").as_int();
+    center_y_ = this->get_parameter("center_y").as_int();
     
     RCLCPP_INFO(this->get_logger(), "Parameters initialized:");
     RCLCPP_INFO(this->get_logger(), "  Mode: %s", mode_.c_str());
@@ -88,6 +92,7 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     RCLCPP_INFO(this->get_logger(), "  Publish debug image: %s", publish_debug_image_ ? "true" : "false");
     RCLCPP_INFO(this->get_logger(), "  ROI mode: %s", roi_mode_.c_str());
     RCLCPP_INFO(this->get_logger(), "  ROI size: %dx%d", roi_width_, roi_height_);
+    RCLCPP_INFO(this->get_logger(), "  ROI center: (%d, %d) (-1 = auto center)", center_x_, center_y_);
 }
 
 void ObjectDetectionOpenvinoNode::loadModel()
@@ -137,9 +142,13 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             int actual_roi_w = std::min(roi_width_, img_width);
             int actual_roi_h = std::min(roi_height_, img_height);
             
-            // Calculate top-left corner to center the ROI
-            int x = (img_width - actual_roi_w) / 2;
-            int y = (img_height - actual_roi_h) / 2;
+            // Determine center point (use custom center or image center)
+            int center_x = (center_x_ < 0) ? (img_width / 2) : center_x_;
+            int center_y = (center_y_ < 0) ? (img_height / 2) : center_y_;
+            
+            // Calculate top-left corner based on center point
+            int x = center_x - actual_roi_w / 2;
+            int y = center_y - actual_roi_h / 2;
             
             roi_rect = cv::Rect(x, y, actual_roi_w, actual_roi_h);
             

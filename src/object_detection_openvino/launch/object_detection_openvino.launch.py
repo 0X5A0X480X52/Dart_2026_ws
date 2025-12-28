@@ -87,6 +87,16 @@ def generate_launch_description():
             default_value='240',
             description='ROI height when roi_mode is center'
         ),
+        DeclareLaunchArgument(
+            'center_x',
+            default_value='-1',
+            description='Center X pixel for ROI when roi_mode is center (-1 = image center)'
+        ),
+        DeclareLaunchArgument(
+            'center_y',
+            default_value='-1',
+            description='Center Y pixel for ROI when roi_mode is center (-1 = image center)'
+        ),
         
 
         Node(
@@ -103,6 +113,14 @@ def generate_launch_description():
                     ),
                     'roi_height': ParameterValue(
                         LaunchConfiguration('roi_height'),
+                        value_type=int
+                    ),
+                    'center_x': ParameterValue(
+                        LaunchConfiguration('center_x'),
+                        value_type=int
+                    ),
+                    'center_y': ParameterValue(
+                        LaunchConfiguration('center_y'),
                         value_type=int
                     ),
                     'publish_debug_image': ParameterValue(

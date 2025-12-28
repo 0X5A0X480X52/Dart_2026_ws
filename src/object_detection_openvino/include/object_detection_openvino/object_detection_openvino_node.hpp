@@ -38,6 +38,8 @@ private:
     std::string roi_mode_;
     int roi_width_;
     int roi_height_;
+    int center_x_;  // Center X pixel for ROI (-1 = image center)
+    int center_y_;  // Center Y pixel for ROI (-1 = image center)
     cv::Rect roi_rect_;  // Current ROI rectangle in original image coordinates
     
     // Model paths
