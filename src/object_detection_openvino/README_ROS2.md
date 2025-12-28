@@ -123,8 +123,9 @@ ros2 run object_detection_openvino object_detection_openvino_node \
 | roi_mode | string | "full" | ROI（感兴趣区域）模式："full" 使用整个图像作为输入；"center" 使用图像中心的指定大小区域作为输入 |
 | roi_width | int | 1280 | 当 roi_mode 为 "center" 时的ROI宽度（对 "full" 模式无效） |
 | roi_height | int | 1024 | 当 roi_mode 为 "center" 时的ROI高度（对 "full" 模式无效） |
-| center_x | int | -1 | 当 roi_mode 为 "center" 时指定中心 X 像素坐标；-1 表示使用图像中心 |
-| center_y | int | -1 | 当 roi_mode 为 "center" 时指定中心 Y 像素坐标；-1 表示使用图像中心 |
+| center_mode | string | "auto" | ROI中心坐标的解释模式："auto" 自动检测格式；"pixel" 像素坐标；"percent" 百分比；"fraction" 分数 |
+| center_x | double | -1.0 | 当 roi_mode 为 "center" 时的ROI中心X坐标（根据center_mode解释） |
+| center_y | double | -1.0 | 当 roi_mode 为 "center" 时的ROI中心Y坐标（根据center_mode解释） |
 
 ## ROI（感兴趣区域）功能
 
@@ -144,28 +145,81 @@ roi_mode: "full"
 roi_mode: "center"
 roi_width: 1280
 roi_height: 1024
+center_mode: "auto"  # 可选：auto, pixel, percent, fraction
+center_x: -1.0
+center_y: -1.0
 ```
 
-此外可以通过 `center_x` / `center_y` 指定 ROI 的中心像素坐标（以原始图像像素为单位）：
+此外可以通过 `center_x` / `center_y` 指定 ROI 的中心坐标，支持多种格式：
 
 ```yaml
 roi_mode: "center"
 roi_width: 800
 roi_height: 600
-center_x: -1   # -1 表示使用图像中心
-center_y: -1
+center_mode: "auto"
+center_x: -1.0   # -1 表示使用图像中心
+center_y: -1.0
 ```
 
-说明：
-- `center_x`/`center_y` = -1：使用图像中心（默认行为）。
-- 如果指定的中心点在图像边界之外，节点会自动将中心坐标裁剪到合法范围并给出警告。
-- ROI 会基于指定中心点计算左上角坐标，随后裁剪到图像边界以保证合法性。
+#### `center_mode` 参数说明
+
+`center_mode` 控制如何解释 `center_x` 和 `center_y` 的值：
+
+- `"auto"`（默认）：自动检测格式（向后兼容）
+  - `-1`：自动使用图像中心
+  - `0.0-1.0`：分数（相对于图像尺寸）
+  - `0-100`：百分比
+  - `>100`：像素坐标
+- `"pixel"`：直接像素坐标
+- `"percent"`：百分比（0-100）
+- `"fraction"`：分数（0.0-1.0）
+
+#### `center_x` / `center_y` 格式说明
+
+根据 `center_mode` 的不同，`center_x` 与 `center_y` 的解释方式如下：
+
+**auto 模式（默认）：**
+- `-1`：自动使用图像中心（默认）。
+- `0.0` 到 `1.0`：表示相对于图像尺寸的分数（例如 `0.5` 表示图像中心）。
+- `0` 到 `100`：表示百分比（例如 `50` 表示图像中心）。
+- 大于 `100`：表示像素坐标（直接使用）。
+
+**pixel 模式：**
+- 直接像素坐标值（例如 `320` 表示图像宽度320像素处）。
+
+**percent 模式：**
+- `0-100` 的百分比值（例如 `50` 表示图像中心）。
+
+**fraction 模式：**
+- `0.0-1.0` 的分数（例如 `0.5` 表示图像中心）。
+
+节点会将计算出的中心坐标裁剪到图像范围内，并在必要时给出警告，同时在日志中输出解释信息。
+
+#### 使用示例
+
+```bash
+# 使用百分比指定中心点（auto模式自动检测）
+ros2 launch object_detection_openvino object_detection_openvino.launch.py \
+    center_x:=50 center_y:=50 roi_mode:=center roi_width:=320 roi_height:=240
+
+# 明确指定百分比模式
+ros2 launch object_detection_openvino object_detection_openvino.launch.py \
+    center_mode:=percent center_x:=50 center_y:=50 roi_mode:=center roi_width:=320 roi_height:=240
+
+# 使用分数指定中心点
+ros2 launch object_detection_openvino object_detection_openvino.launch.py \
+    center_mode:=fraction center_x:=0.5 center_y:=0.5 roi_mode:=center roi_width:=320 roi_height:=240
+
+# 使用像素坐标
+ros2 launch object_detection_openvino object_detection_openvino.launch.py \
+    center_mode:=pixel center_x:=320 center_y:=240 roi_mode:=center roi_width:=320 roi_height:=240
+```
 
 示例：指定自定义中心点（例如 `(100,150)`）：
 
 ```bash
 ros2 launch object_detection_openvino object_detection_openvino.launch.py \
-    center_x:=100 center_y:=150 roi_mode:=center roi_width:=320 roi_height:=240
+    center_mode:=pixel center_x:=100 center_y:=150 roi_mode:=center roi_width:=320 roi_height:=240
 ```
 
 

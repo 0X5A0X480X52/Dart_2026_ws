@@ -46,8 +46,8 @@ def generate_launch_description():
             parameters=[
                 params_file,
                 {
-                    'center_x': 100,
-                    'center_y': 150,
+                    'center_x': 100.0,
+                    'center_y': 150.0,
                     'detection_topic': '/detector/custom',
                     'debug_image_topic': '/detector/custom_debug',
                     'image_topic': '/image_raw'
@@ -69,8 +69,9 @@ def generate_launch_description():
                     'roi_mode': 'center',
                     'roi_width': 320,
                     'roi_height': 240,
-                    'center_x': -1,
-                    'center_y': -1,
+                    'center_mode': 'auto',
+                    'center_x': -1.0,
+                    'center_y': -1.0,
                     'input_width': 640,
                     'input_height': 384
                 }
@@ -86,8 +87,9 @@ def generate_launch_description():
                     'roi_mode': 'center',
                     'roi_width': 320,
                     'roi_height': 240,
-                    'center_x': 100,
-                    'center_y': 150,
+                    'center_mode': 'pixel',
+                    'center_x': 100.0,
+                    'center_y': 150.0,
                     'input_width': 640,
                     'input_height': 384
                 }

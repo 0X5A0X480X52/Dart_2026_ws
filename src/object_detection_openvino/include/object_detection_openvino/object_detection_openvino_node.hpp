@@ -38,8 +38,9 @@ private:
     std::string roi_mode_;
     int roi_width_;
     int roi_height_;
-    int center_x_;  // Center X pixel for ROI (-1 = image center)
-    int center_y_;  // Center Y pixel for ROI (-1 = image center)
+    std::string center_mode_;  // "auto", "pixel", "percent", "fraction"
+    double center_x_;  // Center X for ROI: -1 = auto center; [0..1] fraction; (0..100] percent; >100 pixels
+    double center_y_;  // Center Y for ROI: -1 = auto center; [0..1] fraction; (0..100] percent; >100 pixels
     cv::Rect roi_rect_;  // Current ROI rectangle in original image coordinates
     
     // Model paths

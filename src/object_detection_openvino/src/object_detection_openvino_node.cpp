@@ -57,8 +57,9 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("roi_mode", "center");
     this->declare_parameter("roi_width", 1280);
     this->declare_parameter("roi_height", 1024);
-    this->declare_parameter("center_x", -1);
-    this->declare_parameter("center_y", -1);
+    this->declare_parameter("center_mode", "auto");
+    this->declare_parameter("center_x", -1.0);
+    this->declare_parameter("center_y", -1.0);
     
     mode_ = this->get_parameter("mode").as_string();
     input_width_ = this->get_parameter("input_width").as_int();
@@ -75,8 +76,9 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     roi_mode_ = this->get_parameter("roi_mode").as_string();
     roi_width_ = this->get_parameter("roi_width").as_int();
     roi_height_ = this->get_parameter("roi_height").as_int();
-    center_x_ = this->get_parameter("center_x").as_int();
-    center_y_ = this->get_parameter("center_y").as_int();
+    center_mode_ = this->get_parameter("center_mode").as_string();
+    center_x_ = this->get_parameter("center_x").as_double();
+    center_y_ = this->get_parameter("center_y").as_double();
     
     RCLCPP_INFO(this->get_logger(), "Parameters initialized:");
     RCLCPP_INFO(this->get_logger(), "  Mode: %s", mode_.c_str());
@@ -92,7 +94,8 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     RCLCPP_INFO(this->get_logger(), "  Publish debug image: %s", publish_debug_image_ ? "true" : "false");
     RCLCPP_INFO(this->get_logger(), "  ROI mode: %s", roi_mode_.c_str());
     RCLCPP_INFO(this->get_logger(), "  ROI size: %dx%d", roi_width_, roi_height_);
-    RCLCPP_INFO(this->get_logger(), "  ROI center: (%d, %d) (-1 = auto center)", center_x_, center_y_);
+    RCLCPP_INFO(this->get_logger(), "  Center mode: %s", center_mode_.c_str());
+    RCLCPP_INFO(this->get_logger(), "  ROI center: (%.3g, %.3g)", center_x_, center_y_);
 }
 
 void ObjectDetectionOpenvinoNode::loadModel()
@@ -142,19 +145,59 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             int actual_roi_w = std::min(roi_width_, img_width);
             int actual_roi_h = std::min(roi_height_, img_height);
             
-            // Determine center point (use custom center or image center)
-            int center_x = (center_x_ < 0) ? (img_width / 2) : center_x_;
-            int center_y = (center_y_ < 0) ? (img_height / 2) : center_y_;
+            // Determine center point based on center_mode
+            double raw_cx = center_x_;
+            double raw_cy = center_y_;
 
-            // Clamp center to valid image bounds and warn if user-supplied center was out of bounds
-            int clamped_center_x = std::min(std::max(center_x, 0), img_width - 1);
-            int clamped_center_y = std::min(std::max(center_y, 0), img_height - 1);
-            if (clamped_center_x != center_x || clamped_center_y != center_y) {
-                RCLCPP_WARN(this->get_logger(), "Requested ROI center (%d,%d) out of image bounds, clamped to (%d,%d)",
-                            center_x, center_y, clamped_center_x, clamped_center_y);
+            double cx_px_d;
+            double cy_px_d;
+            
+            // X coordinate interpretation
+            if (center_mode_ == "pixel") {
+                cx_px_d = raw_cx;
+            } else if (center_mode_ == "percent") {
+                cx_px_d = (raw_cx / 100.0) * img_width;
+            } else if (center_mode_ == "fraction") {
+                cx_px_d = raw_cx * img_width;
+            } else { // "auto" mode - auto-detect based on value
+                if (raw_cx < 0.0) {
+                    cx_px_d = img_width / 2.0;
+                } else if (raw_cx <= 1.0) {
+                    cx_px_d = raw_cx * img_width;
+                } else if (raw_cx <= 100.0) {
+                    cx_px_d = (raw_cx / 100.0) * img_width;
+                } else {
+                    cx_px_d = raw_cx;
+                }
             }
-            center_x = clamped_center_x;
-            center_y = clamped_center_y;
+            
+            // Y coordinate interpretation
+            if (center_mode_ == "pixel") {
+                cy_px_d = raw_cy;
+            } else if (center_mode_ == "percent") {
+                cy_px_d = (raw_cy / 100.0) * img_height;
+            } else if (center_mode_ == "fraction") {
+                cy_px_d = raw_cy * img_height;
+            } else { // "auto" mode - auto-detect based on value
+                if (raw_cy < 0.0) {
+                    cy_px_d = img_height / 2.0;
+                } else if (raw_cy <= 1.0) {
+                    cy_px_d = raw_cy * img_height;
+                } else if (raw_cy <= 100.0) {
+                    cy_px_d = (raw_cy / 100.0) * img_height;
+                } else {
+                    cy_px_d = raw_cy;
+                }
+            }
+
+            // Round and clamp to valid image bounds
+            int center_x = std::min(std::max(static_cast<int>(std::lround(cx_px_d)), 0), img_width - 1);
+            int center_y = std::min(std::max(static_cast<int>(std::lround(cy_px_d)), 0), img_height - 1);
+
+            if (center_x != static_cast<int>(std::lround(cx_px_d)) || center_y != static_cast<int>(std::lround(cy_px_d))) {
+                RCLCPP_WARN(this->get_logger(), "Requested ROI center interpreted as (%.3g,%.3g) -> clamped to (%d,%d)",
+                            raw_cx, raw_cy, center_x, center_y);
+            }
 
             // Calculate top-left corner based on center point
             int x = center_x - actual_roi_w / 2;
