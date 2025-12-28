@@ -43,7 +43,11 @@ def main(args=None):
         pass
     
     node.destroy_node()
-    rclpy.shutdown()
+    try:
+        rclpy.shutdown()
+    except Exception:
+        # rclpy may already be shutdown by the launcher event; ignore the error
+        pass
 
 if __name__ == '__main__':
     main()

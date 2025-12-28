@@ -82,6 +82,8 @@ install(DIRECTORY
 install(PROGRAMS
   scripts/test_detection_results.py
   scripts/check_config.py
+  scripts/test_image_publisher.py
+  scripts/test_roi_functionality.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

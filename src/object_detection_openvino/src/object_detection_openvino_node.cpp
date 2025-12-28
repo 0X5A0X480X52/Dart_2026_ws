@@ -145,7 +145,17 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             // Determine center point (use custom center or image center)
             int center_x = (center_x_ < 0) ? (img_width / 2) : center_x_;
             int center_y = (center_y_ < 0) ? (img_height / 2) : center_y_;
-            
+
+            // Clamp center to valid image bounds and warn if user-supplied center was out of bounds
+            int clamped_center_x = std::min(std::max(center_x, 0), img_width - 1);
+            int clamped_center_y = std::min(std::max(center_y, 0), img_height - 1);
+            if (clamped_center_x != center_x || clamped_center_y != center_y) {
+                RCLCPP_WARN(this->get_logger(), "Requested ROI center (%d,%d) out of image bounds, clamped to (%d,%d)",
+                            center_x, center_y, clamped_center_x, clamped_center_y);
+            }
+            center_x = clamped_center_x;
+            center_y = clamped_center_y;
+
             // Calculate top-left corner based on center point
             int x = center_x - actual_roi_w / 2;
             int y = center_y - actual_roi_h / 2;
@@ -163,6 +173,11 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             
             RCLCPP_DEBUG(this->get_logger(), "ROI center mode: rect=[%d,%d,%d,%d]", 
                         roi_rect.x, roi_rect.y, roi_rect.width, roi_rect.height);
+            // Log the effective center used for this ROI (after applying -1 => image center and clamping)
+            int effective_cx = roi_rect.x + roi_rect.width / 2;
+            int effective_cy = roi_rect.y + roi_rect.height / 2;
+            RCLCPP_INFO(this->get_logger(), "Using ROI center=(%d,%d), rect=[%d,%d,%d,%d]",
+                        effective_cx, effective_cy, roi_rect.x, roi_rect.y, roi_rect.width, roi_rect.height);
         } else {
             // Full image mode: use entire image as ROI
             roi_image = image;

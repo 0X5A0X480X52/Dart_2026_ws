@@ -123,6 +123,8 @@ ros2 run object_detection_openvino object_detection_openvino_node \
 | roi_mode | string | "full" | ROI（感兴趣区域）模式："full" 使用整个图像作为输入；"center" 使用图像中心的指定大小区域作为输入 |
 | roi_width | int | 1280 | 当 roi_mode 为 "center" 时的ROI宽度（对 "full" 模式无效） |
 | roi_height | int | 1024 | 当 roi_mode 为 "center" 时的ROI高度（对 "full" 模式无效） |
+| center_x | int | -1 | 当 roi_mode 为 "center" 时指定中心 X 像素坐标；-1 表示使用图像中心 |
+| center_y | int | -1 | 当 roi_mode 为 "center" 时指定中心 Y 像素坐标；-1 表示使用图像中心 |
 
 ## ROI（感兴趣区域）功能
 
@@ -143,6 +145,29 @@ roi_mode: "center"
 roi_width: 1280
 roi_height: 1024
 ```
+
+此外可以通过 `center_x` / `center_y` 指定 ROI 的中心像素坐标（以原始图像像素为单位）：
+
+```yaml
+roi_mode: "center"
+roi_width: 800
+roi_height: 600
+center_x: -1   # -1 表示使用图像中心
+center_y: -1
+```
+
+说明：
+- `center_x`/`center_y` = -1：使用图像中心（默认行为）。
+- 如果指定的中心点在图像边界之外，节点会自动将中心坐标裁剪到合法范围并给出警告。
+- ROI 会基于指定中心点计算左上角坐标，随后裁剪到图像边界以保证合法性。
+
+示例：指定自定义中心点（例如 `(100,150)`）：
+
+```bash
+ros2 launch object_detection_openvino object_detection_openvino.launch.py \
+    center_x:=100 center_y:=150 roi_mode:=center roi_width:=320 roi_height:=240
+```
+
 
 从输入图像的中心提取指定大小的区域进行检测。这在以下场景中很有用：
 

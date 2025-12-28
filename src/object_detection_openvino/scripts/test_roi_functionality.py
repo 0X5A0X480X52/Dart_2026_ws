@@ -18,6 +18,8 @@ class ROITestNode(Node):
         self.declare_parameter('roi_height', 1024)
         self.declare_parameter('input_width', 640)
         self.declare_parameter('input_height', 384)
+        self.declare_parameter('center_x', -1)
+        self.declare_parameter('center_y', -1)
         
         # 读取参数
         roi_mode = self.get_parameter('roi_mode').value
@@ -25,6 +27,8 @@ class ROITestNode(Node):
         roi_height = self.get_parameter('roi_height').value
         input_width = self.get_parameter('input_width').value
         input_height = self.get_parameter('input_height').value
+        center_x = self.get_parameter('center_x').value
+        center_y = self.get_parameter('center_y').value
         
         # 打印参数
         self.get_logger().info('='*60)
@@ -33,6 +37,7 @@ class ROITestNode(Node):
         self.get_logger().info(f'ROI Mode: {roi_mode}')
         self.get_logger().info(f'ROI Size: {roi_width}x{roi_height}')
         self.get_logger().info(f'Model Input Size: {input_width}x{input_height}')
+        self.get_logger().info(f'ROI Center: ({center_x}, {center_y})')
         self.get_logger().info('='*60)
         
         # 验证参数
@@ -47,6 +52,14 @@ class ROITestNode(Node):
             
         if input_width <= 0 or input_height <= 0:
             self.get_logger().error(f'Invalid input size: {input_width}x{input_height}')
+            success = False
+        
+        # center_x/center_y 可以为 -1（自动居中）或在图像范围内
+        if not (center_x == -1 or (0 <= center_x < input_width)):
+            self.get_logger().error(f'Invalid center_x: {center_x} (must be -1 or within [0, {input_width-1}])')
+            success = False
+        if not (center_y == -1 or (0 <= center_y < input_height)):
+            self.get_logger().error(f'Invalid center_y: {center_y} (must be -1 or within [0, {input_height-1}])')
             success = False
         
         if success:
