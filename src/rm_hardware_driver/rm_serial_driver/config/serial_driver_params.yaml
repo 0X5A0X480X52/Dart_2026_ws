@@ -19,8 +19,8 @@
     # 串口通信相关参数
     port_name: "/dev/ttyACM0" # 串口设备
     protocol: "dart"
-    enable_data_print: false # 改为true将会打印从串口读出来的16进制数据
+    enable_data_print: true # 改为true将会打印从串口读出来的16进制数据
 
     # 理想目标点在图像坐标系中的横坐标，应根据实际情况调整
     # 注意：该参数需要手动修改，串口节点暂时不会自动修改这个参数
-    desiredPosX: 200
+    desiredPosX: 700

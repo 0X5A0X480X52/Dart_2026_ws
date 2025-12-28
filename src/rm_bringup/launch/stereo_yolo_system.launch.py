@@ -99,6 +99,8 @@ def generate_launch_description():
                 'roi_mode': 'center',
                 'roi_width': 320,
                 'roi_height': 240,
+                'center_x': 800.0,
+                'center_y': -1.0,
             }
         ],
         remappings=[
@@ -124,6 +126,8 @@ def generate_launch_description():
                 'roi_mode': 'center',
                 'roi_width': 320,
                 'roi_height': 240,
+                'center_x': 600.0,
+                'center_y': -1.0,
             }
         ],
         remappings=[
@@ -154,19 +158,19 @@ def generate_launch_description():
     )
     
     # 串口驱动节点
-    # serial_driver_node = Node(
-    #     package='rm_serial_driver',
-    #     executable='serial_driver_node',
-    #     name='serial_driver',
-    #     output='screen',
-    #     parameters=[
-    #         PathJoinSubstitution([
-    #             FindPackageShare('rm_serial_driver'),
-    #             'config',
-    #             'serial_driver_params.yaml'
-    #         ])
-    #     ],
-    # )
+    serial_driver_node = Node(
+        package='rm_serial_driver',
+        executable='serial_driver_node',
+        name='serial_driver',
+        output='screen',
+        parameters=[
+            PathJoinSubstitution([
+                FindPackageShare('rm_serial_driver'),
+                'config',
+                'serial_driver_params.yaml'
+            ])
+        ],
+    )
     
     stage3 = TimerAction(
         period=10.0,  # 等待YOLO检测启动
