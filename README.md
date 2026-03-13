@@ -80,3 +80,110 @@ ros2 launch foxglove_bridge foxglove_bridge_launch.xml
 ```
 
 启动后可使用 foxglove_bridge 相应接收终端进行可视化调试
+
+## Quick Start
+
+在不同终端中分别启动：
+
+主检测ros2脚本：
+```bash
+source install/setup.bash
+ros2 launch rm_bringup stereo_yolo_system.launch.py
+```
+
+串口ros2脚本：
+```bash
+source install/setup.bash
+ros2 launch rm_serial_driver serial_driver.launch.py
+```
+
+foxglove后端：
+```bash
+source install/setup.bash
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml
+```
+
+更改瞄准中心：修改配置文件 `src/rm_hardware_driver/rm_serial_driver/config/serial_driver_params.yaml`
+
+```yaml
+    # 理想目标点在图像坐标系中的横坐标，应根据实际情况调整
+    # 注意：该参数需要手动修改，串口节点暂时不会自动修改这个参数
+    desiredPosX: 658 
+```
+
+保存yaml配置文件后重新启动串口ros2脚本。
+
+调整 `src/rm_bringup/launch/stereo_yolo_system.launch.py` 中 `parameters` ：
+
+```python
+'roi_width': 320,   # ROI 框宽度
+'roi_height': 240,  # ROI 框高度
+'center_x': 700.0,  # ROI 框中心点像素x坐标
+'center_y': -1.0,   # ROI 框中心点像素y坐标
+```
+
+可更改左右检测 ROI 位置及大小
+
+```python
+# ========== Stage 2: 左右双路YOLO检测 ==========
+    
+    # 获取YOLO配置目录
+    yolo_pkg_dir = get_package_share_directory('object_detection_openvino')
+    yolo_config = os.path.join(yolo_pkg_dir, 'config', 'params.yaml')
+    
+    # 左相机YOLO检测节点
+    left_yolo_node = Node(
+        package='object_detection_openvino',
+        executable='object_detection_openvino_node',
+        name='object_detection_left',
+        namespace='detector_left',
+        output='screen',
+        parameters=[
+            yolo_config,
+            {
+                'image_topic': '/camera_left/image_raw',
+                'detection_topic': '/detector/left/target2d_array',
+                'debug_image_topic': '/detector/left/debug_image',
+                'roi_mode': 'center',
+                'roi_width': 320,
+                'roi_height': 240,
+                'center_x': 700.0, 
+                'center_y': -1.0,
+            }
+        ],
+        remappings=[
+            ('image_raw', '/camera_left/image_raw'),
+            ('/detector/target2d_array', '/detector/left/target2d_array'),
+            ('/detector/debug_image', '/detector/left/debug_image'),
+        ]
+    )
+    
+    # 右相机YOLO检测节点
+    right_yolo_node = Node(
+        package='object_detection_openvino',
+        executable='object_detection_openvino_node',
+        name='object_detection_right',
+        namespace='detector_right',
+        output='screen',
+        parameters=[
+            yolo_config,
+            {
+                'image_topic': '/camera_right/image_raw',
+                'detection_topic': '/detector/right/target2d_array',
+                'debug_image_topic': '/detector/right/debug_image',
+                'roi_mode': 'center',
+                'roi_width': 320,
+                'roi_height': 240,
+                'center_x': 500.0,
+                'center_y': -1.0,
+            }
+        ],
+        remappings=[
+            ('image_raw', '/camera_right/image_raw'),
+            ('/detector/target2d_array', '/detector/right/target2d_array'),
+            ('/detector/debug_image', '/detector/right/debug_image'),
+        ]
+    )
+```
+
+保存后重启主检测ros2脚本

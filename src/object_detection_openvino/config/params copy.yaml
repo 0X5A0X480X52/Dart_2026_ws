@@ -1,0 +1,40 @@
+object_detection_openvino_node:
+  ros__parameters:
+    # Detection mode
+    mode: "armor"
+    
+    # Model inference parameters
+    input_width: 640
+    input_height: 384
+    score_threshold: 0.5
+    nms_threshold: 0.4
+    
+    # ROI (Region of Interest) parameters
+    # roi_mode: "full" (use entire image) or "center" (crop centered region)
+    roi_mode: "center"
+    roi_width: 320   # Width of ROI when roi_mode is "center" (ignored for "full")
+    roi_height: 240  # Height of ROI when roi_mode is "center" (ignored for "full")
+    # Center for ROI when roi_mode is "center".
+    # Supported formats:
+    #  - -1 : use image center (default)
+    #  - 0..1 : fraction of image dimension (e.g., 0.5 = center)
+    #  - 0..100 : percentage (e.g., 50 = center)
+    #  - >100 : absolute pixel coordinate
+    center_mode: "auto"  # "auto", "pixel", "percent", "fraction"
+    center_x: -1.0
+    center_y: -1.0
+    
+    # Model file paths (update these paths according to your setup)
+    xml_path: "./src/object_detection_openvino/config/openvino/Katrin.xml"
+    bin_path: "./src/object_detection_openvino/config/openvino/Katrin.bin"
+    device: "CPU"  # Options: CPU, GPU, MYRIAD, etc.
+    
+    # Topic names
+    image_topic: "/camera_left/image_raw" # the topic subscribed to publish camera image  e.g., "/camera/image_raw"
+    detection_topic: "/detector/target2d_array" # the topic to publish detection results
+    debug_image_topic: "/detector/debug_image" # the topic to publish debug visualization image
+    
+    # Debug options
+    publish_debug_image: true # set to true to publish debug image with bounding boxes and labels
+    
+    # Topic settings are handled in launch file remappings

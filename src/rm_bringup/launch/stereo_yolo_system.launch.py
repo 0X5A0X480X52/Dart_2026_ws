@@ -99,7 +99,7 @@ def generate_launch_description():
                 'roi_mode': 'center',
                 'roi_width': 320,
                 'roi_height': 240,
-                'center_x': 800.0,
+                'center_x': 656.0,
                 'center_y': -1.0,
             }
         ],
@@ -126,7 +126,7 @@ def generate_launch_description():
                 'roi_mode': 'center',
                 'roi_width': 320,
                 'roi_height': 240,
-                'center_x': 600.0,
+                'center_x': 443.0,
                 'center_y': -1.0,
             }
         ],

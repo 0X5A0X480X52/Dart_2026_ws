@@ -11,10 +11,10 @@ stereo_yolo_distance:
     min_height_iou: 0.05          # 最小高度IOU阈值（0-1）
     
     # 距离和视差范围
-    max_distance: 10.0           # 最大有效距离（米）
-    min_distance: 0.5            # 最小有效距离（米）
-    max_disparity: 300.0         # 最大视差（像素）
-    min_disparity: 10.0          # 最小视差（像素）
+    max_distance: 100.0           # 最大有效距离（米）
+    min_distance: 0.05            # 最小有效距离（米）
+    max_disparity: 3000.0         # 最大视差（像素）
+    min_disparity: 1.0          # 最小视差（像素）
     
     # 相机标定参数
     # 如果use_manual_calibration为false，将从camera_info话题自动获取
@@ -27,7 +27,7 @@ stereo_yolo_distance:
 
     # 时间容差（秒）：左右相机检测时间允许的最大差值
     # 如果左右检测时间差超过该值，则会被判定为不匹配
-    max_time_diff: 0.2
+    max_time_diff: 0.3
     
     # 注意事项：
     # 1. fx 值来自 camera_info.yaml 中的 projection_matrix[0,0]
