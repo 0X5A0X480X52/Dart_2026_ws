@@ -5,7 +5,7 @@
   mv_camera:
     ros__parameters:
       camera_name: camera_right
-      camera_sn: "041170020075"  # 左相机序列号
+      camera_sn: "042081320100"  # 左相机序列号
       camera_info_url: "package://mindvision_camera/config/dual_50mm/right_camera_info.yaml"
       
       # 图像分辨率设置（设置为0则使用相机默认分辨率）
@@ -29,7 +29,7 @@
   mv_camera:
     ros__parameters:
       camera_name: camera_left
-      camera_sn: "042081320100"  # 右相机序列号
+      camera_sn: "041170020075"  # 右相机序列号
       camera_info_url: "package://mindvision_camera/config/dual_50mm/left_camera_info.yaml"
       
       # 图像分辨率设置（设置为0则使用相机默认分辨率）

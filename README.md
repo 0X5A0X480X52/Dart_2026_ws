@@ -186,4 +186,5 @@ ros2 launch foxglove_bridge foxglove_bridge_launch.xml
     )
 ```
 
-保存后重启主检测ros2脚本
+保存后重启主检测ros2脚本source install/setup.bash
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml
