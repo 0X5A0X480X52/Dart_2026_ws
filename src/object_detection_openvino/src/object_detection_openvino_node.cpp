@@ -47,6 +47,7 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("input_height", 640);
     this->declare_parameter("score_threshold", 0.5);
     this->declare_parameter("nms_threshold", 0.4);
+    this->declare_parameter("model_output_format", "legacy27");
     this->declare_parameter("xml_path", "./src/object_detection_openvino/config/openvino/Katrin.xml");
     this->declare_parameter("bin_path", "./src/object_detection_openvino/config/openvino/Katrin.bin");
     this->declare_parameter("device", "CPU");
@@ -66,6 +67,7 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     input_height_ = this->get_parameter("input_height").as_int();
     score_threshold_ = this->get_parameter("score_threshold").as_double();
     nms_threshold_ = this->get_parameter("nms_threshold").as_double();
+    model_output_format_ = this->get_parameter("model_output_format").as_string();
     xml_path_ = this->get_parameter("xml_path").as_string();
     bin_path_ = this->get_parameter("bin_path").as_string();
     device_ = this->get_parameter("device").as_string();
@@ -85,6 +87,7 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     RCLCPP_INFO(this->get_logger(), "  Input size: %dx%d", input_width_, input_height_);
     RCLCPP_INFO(this->get_logger(), "  Score threshold: %.2f", score_threshold_);
     RCLCPP_INFO(this->get_logger(), "  NMS threshold: %.2f", nms_threshold_);
+    RCLCPP_INFO(this->get_logger(), "  Model output format: %s", model_output_format_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Model XML: %s", xml_path_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Model BIN: %s", bin_path_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Device: %s", device_.c_str());
@@ -108,6 +111,7 @@ void ObjectDetectionOpenvinoNode::loadModel()
         
         openvino_infer_ = std::make_unique<ROS2OpenvinoInfer>(
             path_map, 
+            model_output_format_,
             score_threshold_, 
             nms_threshold_
         );
@@ -317,19 +321,25 @@ rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessa
         target.confidence = static_cast<float>(detection.score);
 
         // ---- 类别映射 ----
-        switch (detection.id) {
-            case 0:
-                target.class_id = 0;  // armor_blue
-                break;
-            case 1:
-                target.class_id = 1;  // armor_red
-                break;
-            case 8:
-                target.class_id = 8;  // armor
-                break;
-            default:
-                target.class_id = 255;  // unknown
-                break;
+        // rm_interfaces::Target2D.class_id is the semantic category.
+        // For xywh_conf_5xn there are no class logits and this model detects armor only.
+        if (model_output_format_ == "xywh_conf_5xn") {
+            target.class_id = 1;  // armor
+        } else {
+            switch (detection.id) {
+                case 0:
+                    target.class_id = 0;  // armor_blue
+                    break;
+                case 1:
+                    target.class_id = 1;  // armor_red
+                    break;
+                case 8:
+                    target.class_id = 8;  // armor
+                    break;
+                default:
+                    target.class_id = 255;  // unknown
+                    break;
+            }
         }
 
         // ---- 跟踪 ID ----

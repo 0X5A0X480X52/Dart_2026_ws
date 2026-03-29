@@ -24,6 +24,7 @@ public:
 
     explicit ROS2OpenvinoInfer(
         const std::map<std::string, std::string>& path,
+        const std::string& output_format,
         double score_threshold = 0.5,
         double nms_threshold = 0.4
     );
@@ -43,6 +44,7 @@ private:
     std::map<bool, ov::InferRequest> infer_requests_;
     
     // Configuration parameters
+    std::string output_format_;
     double score_threshold_;
     double nms_threshold_;
 };

@@ -48,6 +48,11 @@ def generate_launch_description():
             description='NMS threshold for post-processing'
         ),
         DeclareLaunchArgument(
+            'model_output_format',
+            default_value='legacy27',
+            description='Output parser format: legacy27 or xywh_conf_5xn'
+        ),
+        DeclareLaunchArgument(
             'xml_path',
             default_value='./src/object_detection_openvino/config/openvino/Katrin.xml',
             description='Path to OpenVINO model XML file'
@@ -106,6 +111,23 @@ def generate_launch_description():
             parameters=[
                 LaunchConfiguration('params_file'),
                 {
+                    'mode': LaunchConfiguration('mode'),
+                    'input_width': ParameterValue(
+                        LaunchConfiguration('input_width'),
+                        value_type=int
+                    ),
+                    'input_height': ParameterValue(
+                        LaunchConfiguration('input_height'),
+                        value_type=int
+                    ),
+                    'score_threshold': ParameterValue(
+                        LaunchConfiguration('score_threshold'),
+                        value_type=float
+                    ),
+                    'nms_threshold': ParameterValue(
+                        LaunchConfiguration('nms_threshold'),
+                        value_type=float
+                    ),
                     'roi_mode': LaunchConfiguration('roi_mode'),
                     'roi_width': ParameterValue(
                         LaunchConfiguration('roi_width'),
@@ -117,16 +139,21 @@ def generate_launch_description():
                     ),
                     'center_x': ParameterValue(
                         LaunchConfiguration('center_x'),
-                        value_type=int
+                        value_type=float
                     ),
                     'center_y': ParameterValue(
                         LaunchConfiguration('center_y'),
-                        value_type=int
+                        value_type=float
                     ),
                     'publish_debug_image': ParameterValue(
                         LaunchConfiguration('publish_debug_image'),
                         value_type=bool
                     ),
+                    'model_output_format': LaunchConfiguration('model_output_format'),
+                    'xml_path': LaunchConfiguration('xml_path'),
+                    'bin_path': LaunchConfiguration('bin_path'),
+                    'device': LaunchConfiguration('device'),
+                    'image_topic': LaunchConfiguration('image_topic'),
                 }
             ],
             remappings=[

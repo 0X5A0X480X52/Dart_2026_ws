@@ -1,0 +1,33 @@
+object_detection_openvino_node:
+  ros__parameters:
+    # Detection mode
+    mode: "armor"
+
+    # INT8 model inference parameters (must match best_int8 model input/output)
+    input_width: 640
+    input_height: 640
+    score_threshold: 0.5
+    nms_threshold: 0.4
+    model_output_format: "xywh_conf_5xn"
+
+    # ROI parameters
+    # For initial validation, use full frame to avoid missing targets due to cropping.
+    roi_mode: "full"
+    roi_width: 320
+    roi_height: 240
+    center_mode: "auto"
+    center_x: -1.0
+    center_y: -1.0
+
+    # INT8 OpenVINO model paths
+    xml_path: "./src/object_detection_openvino/config/best_int8_openvino_model/best_int8.xml"
+    bin_path: "./src/object_detection_openvino/config/best_int8_openvino_model/best_int8.bin"
+    device: "CPU"
+
+    # Topics
+    image_topic: "/camera_left/image_raw"
+    detection_topic: "/detector/target2d_array"
+    debug_image_topic: "/detector/debug_image"
+
+    # Debug options
+    publish_debug_image: false

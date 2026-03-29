@@ -32,6 +32,7 @@ private:
     int input_height_;
     double score_threshold_;
     double nms_threshold_;
+    std::string model_output_format_;
     bool startup_;
     
     // ROI parameters
