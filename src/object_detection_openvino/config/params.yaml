@@ -36,5 +36,12 @@ object_detection_openvino_node:
     
     # Debug options
     publish_debug_image: true # set to true to publish debug image with bounding boxes and labels
+    enable_performance_log: true # periodically print inference/latency statistics
+    perf_log_interval: 60 # print one performance line every N processed frames
+
+    # Queue / QoS tuning (for latency troubleshooting)
+    image_queue_size: 10 # incoming image queue depth; set to 1 to reduce backlog latency
+    debug_image_queue_size: 2 # debug image publisher queue depth
+    use_sensor_data_qos: false # set true to use sensor-data QoS (best effort)
     
     # Topic settings are handled in launch file remappings

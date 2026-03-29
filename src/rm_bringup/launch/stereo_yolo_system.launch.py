@@ -7,7 +7,6 @@
 3. 立体YOLO测距和串口驱动 (Stage 3)
 """
 
-import os
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -19,7 +18,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description():
@@ -36,16 +35,32 @@ def generate_launch_description():
         description='双目相机参数文件'
     )
     
+    yolo_params_file_arg = DeclareLaunchArgument(
+        'yolo_params_file',
+        default_value=PathJoinSubstitution([
+            FindPackageShare('object_detection_openvino'),
+            'config',
+            'params_int8.yaml'
+        ]),
+        description='YOLO参数文件路径（建议使用 params_int8.yaml）'
+    )
+
     yolo_model_path_arg = DeclareLaunchArgument(
         'yolo_model_xml',
-        default_value='',
+        default_value='./src/object_detection_openvino/config/best_int8_openvino_model/best_int8.xml',
         description='YOLO模型XML文件路径'
     )
     
     yolo_model_bin_arg = DeclareLaunchArgument(
         'yolo_model_bin',
-        default_value='',
+        default_value='./src/object_detection_openvino/config/best_int8_openvino_model/best_int8.bin',
         description='YOLO模型BIN文件路径'
+    )
+
+    yolo_model_output_format_arg = DeclareLaunchArgument(
+        'yolo_model_output_format',
+        default_value='xywh_conf_5xn',
+        description='YOLO输出格式（legacy27 或 xywh_conf_5xn）'
     )
     
     stereo_config_arg = DeclareLaunchArgument(
@@ -79,10 +94,6 @@ def generate_launch_description():
     
     # ========== Stage 2: 左右双路YOLO检测 ==========
     
-    # 获取YOLO配置目录
-    yolo_pkg_dir = get_package_share_directory('object_detection_openvino')
-    yolo_config = os.path.join(yolo_pkg_dir, 'config', 'params.yaml')
-    
     # 左相机YOLO检测节点
     left_yolo_node = Node(
         package='object_detection_openvino',
@@ -91,8 +102,16 @@ def generate_launch_description():
         namespace='detector_left',
         output='screen',
         parameters=[
-            yolo_config,
+            LaunchConfiguration('yolo_params_file'),
             {
+                # 显式覆盖关键模型参数，避免因参数文件节点名不匹配而回退默认值
+                'model_output_format': LaunchConfiguration('yolo_model_output_format'),
+                'xml_path': LaunchConfiguration('yolo_model_xml'),
+                'bin_path': LaunchConfiguration('yolo_model_bin'),
+                'input_width': ParameterValue(640, value_type=int),
+                'input_height': ParameterValue(640, value_type=int),
+                'score_threshold': ParameterValue(0.5, value_type=float),
+                'nms_threshold': ParameterValue(0.4, value_type=float),
                 'image_topic': '/camera_left/image_raw',
                 'detection_topic': '/detector/left/target2d_array',
                 'debug_image_topic': '/detector/left/debug_image',
@@ -118,8 +137,16 @@ def generate_launch_description():
         namespace='detector_right',
         output='screen',
         parameters=[
-            yolo_config,
+            LaunchConfiguration('yolo_params_file'),
             {
+                # 显式覆盖关键模型参数，避免因参数文件节点名不匹配而回退默认值
+                'model_output_format': LaunchConfiguration('yolo_model_output_format'),
+                'xml_path': LaunchConfiguration('yolo_model_xml'),
+                'bin_path': LaunchConfiguration('yolo_model_bin'),
+                'input_width': ParameterValue(640, value_type=int),
+                'input_height': ParameterValue(640, value_type=int),
+                'score_threshold': ParameterValue(0.5, value_type=float),
+                'nms_threshold': ParameterValue(0.4, value_type=float),
                 'image_topic': '/camera_right/image_raw',
                 'detection_topic': '/detector/right/target2d_array',
                 'debug_image_topic': '/detector/right/debug_image',
@@ -183,8 +210,10 @@ def generate_launch_description():
     
     return LaunchDescription([
         camera_params_arg,
+        yolo_params_file_arg,
         yolo_model_path_arg,
         yolo_model_bin_arg,
+        yolo_model_output_format_arg,
         stereo_config_arg,
         LogInfo(msg="=== 双目YOLO测距系统启动开始 ==="),
         stage1,

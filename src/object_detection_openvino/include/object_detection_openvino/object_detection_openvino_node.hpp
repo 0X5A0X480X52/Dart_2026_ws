@@ -5,7 +5,9 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <rm_interfaces/msg/target2_d_array.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.hpp>
 #include <opencv2/opencv.hpp>
+#include <chrono>
 
 #include "object_detection_openvino/ros2_openvino_infer.hpp"
 
@@ -21,7 +23,7 @@ private:
     // ROS2 publishers and subscribers
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_subscription_;
     rclcpp::Publisher<rm_interfaces::msg::Target2DArray>::SharedPtr target_publisher_;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr debug_image_publisher_;
+    image_transport::Publisher debug_image_publisher_;
     
     // OpenVINO inference engine
     std::unique_ptr<ROS2OpenvinoInfer> openvino_infer_;
@@ -52,6 +54,20 @@ private:
     std::string detection_topic_;
     std::string debug_image_topic_;
     bool publish_debug_image_;
+    bool enable_performance_log_;
+    bool use_sensor_data_qos_;
+    int perf_log_interval_;
+    int image_queue_size_;
+    int debug_image_queue_size_;
+
+    // Performance stats (windowed)
+    std::size_t perf_sample_count_ = 0;
+    std::size_t perf_msg_age_count_ = 0;
+    double perf_infer_ms_sum_ = 0.0;
+    double perf_total_ms_sum_ = 0.0;
+    double perf_debug_ms_sum_ = 0.0;
+    double perf_msg_age_ms_sum_ = 0.0;
+    std::chrono::steady_clock::time_point perf_window_start_;
     
     void initializeParameters();
     void loadModel();
@@ -62,6 +78,12 @@ private:
         cv::Mat& image,
         const std::vector<ROS2OpenvinoInfer::Light>& detections,
         const cv::Rect& roi_rect);
+    void updatePerformanceStats(
+        double infer_ms,
+        double total_ms,
+        double debug_ms,
+        double msg_age_ms,
+        bool has_msg_stamp);
 };
 
 #endif // OBJECT_DETECTION_OPENVINO_NODE_HPP_

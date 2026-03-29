@@ -1,6 +1,8 @@
 #include "object_detection_openvino/object_detection_openvino_node.hpp"
 #include <rm_interfaces/msg/target2_d.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <algorithm>
+#include <chrono>
 #include <iomanip>
 #include <sstream>
 
@@ -16,8 +18,14 @@ ObjectDetectionOpenvinoNode::ObjectDetectionOpenvinoNode()
     loadModel();
     
     // Create subscription to image topic
+    const auto image_queue_depth = static_cast<std::size_t>(std::max(1, image_queue_size_));
+    rclcpp::QoS image_qos{rclcpp::KeepLast(image_queue_depth)};
+    if (use_sensor_data_qos_) {
+        image_qos = rclcpp::SensorDataQoS().keep_last(image_queue_depth);
+    }
+
     image_subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
-        image_topic_, 10,
+        image_topic_, image_qos,
         std::bind(&ObjectDetectionOpenvinoNode::imageCallback, this, std::placeholders::_1));
     
     // Create publisher for detection results
@@ -26,10 +34,19 @@ ObjectDetectionOpenvinoNode::ObjectDetectionOpenvinoNode()
     
     // Create publisher for debug image (if enabled)
     if (publish_debug_image_) {
-        debug_image_publisher_ = this->create_publisher<sensor_msgs::msg::Image>(
-            debug_image_topic_, 10);
-        RCLCPP_INFO(this->get_logger(), "Debug image publisher created");
+        auto debug_qos_profile = use_sensor_data_qos_ ? rmw_qos_profile_sensor_data : rmw_qos_profile_default;
+        debug_qos_profile.depth = static_cast<size_t>(std::max(1, debug_image_queue_size_));
+
+        debug_image_publisher_ = image_transport::create_publisher(
+            this, debug_image_topic_, debug_qos_profile);
+
+        RCLCPP_INFO(
+            this->get_logger(),
+            "Debug image publisher created (base topic: %s, transport: raw/compressed if plugin is available)",
+            debug_image_topic_.c_str());
     }
+
+    perf_window_start_ = std::chrono::steady_clock::now();
     
     RCLCPP_INFO(this->get_logger(), "Object Detection OpenVINO Node initialized successfully");
 }
@@ -55,6 +72,11 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     this->declare_parameter("detection_topic", "/detector/target2d_array");
     this->declare_parameter("debug_image_topic", "/detector/debug_image");
     this->declare_parameter("publish_debug_image", true);
+    this->declare_parameter("enable_performance_log", true);
+    this->declare_parameter("perf_log_interval", 60);
+    this->declare_parameter("image_queue_size", 10);
+    this->declare_parameter("debug_image_queue_size", 2);
+    this->declare_parameter("use_sensor_data_qos", false);
     this->declare_parameter("roi_mode", "center");
     this->declare_parameter("roi_width", 1280);
     this->declare_parameter("roi_height", 1024);
@@ -75,6 +97,11 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     detection_topic_ = this->get_parameter("detection_topic").as_string();
     debug_image_topic_ = this->get_parameter("debug_image_topic").as_string();
     publish_debug_image_ = this->get_parameter("publish_debug_image").as_bool();
+    enable_performance_log_ = this->get_parameter("enable_performance_log").as_bool();
+    perf_log_interval_ = this->get_parameter("perf_log_interval").as_int();
+    image_queue_size_ = this->get_parameter("image_queue_size").as_int();
+    debug_image_queue_size_ = this->get_parameter("debug_image_queue_size").as_int();
+    use_sensor_data_qos_ = this->get_parameter("use_sensor_data_qos").as_bool();
     roi_mode_ = this->get_parameter("roi_mode").as_string();
     roi_width_ = this->get_parameter("roi_width").as_int();
     roi_height_ = this->get_parameter("roi_height").as_int();
@@ -95,6 +122,11 @@ void ObjectDetectionOpenvinoNode::initializeParameters()
     RCLCPP_INFO(this->get_logger(), "  Detection topic: %s", detection_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Debug image topic: %s", debug_image_topic_.c_str());
     RCLCPP_INFO(this->get_logger(), "  Publish debug image: %s", publish_debug_image_ ? "true" : "false");
+    RCLCPP_INFO(this->get_logger(), "  Enable performance log: %s", enable_performance_log_ ? "true" : "false");
+    RCLCPP_INFO(this->get_logger(), "  Performance log interval: %d frames", perf_log_interval_);
+    RCLCPP_INFO(this->get_logger(), "  Image queue size: %d", image_queue_size_);
+    RCLCPP_INFO(this->get_logger(), "  Debug image queue size: %d", debug_image_queue_size_);
+    RCLCPP_INFO(this->get_logger(), "  Use sensor data QoS: %s", use_sensor_data_qos_ ? "true" : "false");
     RCLCPP_INFO(this->get_logger(), "  ROI mode: %s", roi_mode_.c_str());
     RCLCPP_INFO(this->get_logger(), "  ROI size: %dx%d", roi_width_, roi_height_);
     RCLCPP_INFO(this->get_logger(), "  Center mode: %s", center_mode_.c_str());
@@ -126,6 +158,13 @@ void ObjectDetectionOpenvinoNode::loadModel()
 void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::SharedPtr msg)
 {
     try {
+        const auto callback_start = std::chrono::steady_clock::now();
+        bool has_msg_stamp = !(msg->header.stamp.sec == 0 && msg->header.stamp.nanosec == 0);
+        double msg_age_ms = 0.0;
+        if (has_msg_stamp) {
+            msg_age_ms = (this->now() - rclcpp::Time(msg->header.stamp)).seconds() * 1000.0;
+        }
+
         // Convert ROS image message to OpenCV Mat (use share to avoid copy when possible)
         cv_bridge::CvImageConstPtr cv_ptr;
         try {
@@ -199,8 +238,15 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             int center_y = std::min(std::max(static_cast<int>(std::lround(cy_px_d)), 0), img_height - 1);
 
             if (center_x != static_cast<int>(std::lround(cx_px_d)) || center_y != static_cast<int>(std::lround(cy_px_d))) {
-                RCLCPP_WARN(this->get_logger(), "Requested ROI center interpreted as (%.3g,%.3g) -> clamped to (%d,%d)",
-                            raw_cx, raw_cy, center_x, center_y);
+                RCLCPP_WARN_THROTTLE(
+                    this->get_logger(),
+                    *this->get_clock(),
+                    2000,
+                    "Requested ROI center interpreted as (%.3g,%.3g) -> clamped to (%d,%d)",
+                    raw_cx,
+                    raw_cy,
+                    center_x,
+                    center_y);
             }
 
             // Calculate top-left corner based on center point
@@ -223,8 +269,17 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             // Log the effective center used for this ROI (after applying -1 => image center and clamping)
             int effective_cx = roi_rect.x + roi_rect.width / 2;
             int effective_cy = roi_rect.y + roi_rect.height / 2;
-            RCLCPP_INFO(this->get_logger(), "Using ROI center=(%d,%d), rect=[%d,%d,%d,%d]",
-                        effective_cx, effective_cy, roi_rect.x, roi_rect.y, roi_rect.width, roi_rect.height);
+            RCLCPP_DEBUG_THROTTLE(
+                this->get_logger(),
+                *this->get_clock(),
+                2000,
+                "Using ROI center=(%d,%d), rect=[%d,%d,%d,%d]",
+                effective_cx,
+                effective_cy,
+                roi_rect.x,
+                roi_rect.y,
+                roi_rect.width,
+                roi_rect.height);
         } else {
             // Full image mode: use entire image as ROI
             roi_image = image;
@@ -235,6 +290,8 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
         
         // Store ROI rect for visualization
         roi_rect_ = roi_rect;
+
+        const auto infer_start = std::chrono::steady_clock::now();
         
         // Perform inference on ROI image
         auto detection_results = openvino_infer_->infer(
@@ -243,6 +300,8 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
             0,  // my_color (not used in current implementation)
             startup_
         );
+        const auto infer_end = std::chrono::steady_clock::now();
+        const double infer_ms = std::chrono::duration<double, std::milli>(infer_end - infer_start).count();
         
         // Handle startup phase (skip first frame)
         if (startup_) {
@@ -270,17 +329,28 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
         
         // Publish detection results (do this ASAP for synchronization)
         target_publisher_->publish(target_array_msg);
+
+        double debug_publish_ms = 0.0;
         
         // Publish debug image if enabled (after main publish to minimize delay)
         if (publish_debug_image_ && debug_image_publisher_) {
+            const auto debug_start = std::chrono::steady_clock::now();
+
             // Only clone when necessary for debug visualization
             cv::Mat debug_image = image.clone();
             drawDebugImage(debug_image, detection_results, roi_rect);
             
             // Use the same deep-copied header for debug image
             auto debug_msg = cv_bridge::CvImage(header_copy, "bgr8", debug_image).toImageMsg();
-            debug_image_publisher_->publish(*debug_msg);
+            debug_image_publisher_.publish(*debug_msg);
+
+            const auto debug_end = std::chrono::steady_clock::now();
+            debug_publish_ms = std::chrono::duration<double, std::milli>(debug_end - debug_start).count();
         }
+
+        const auto callback_end = std::chrono::steady_clock::now();
+        const double total_ms = std::chrono::duration<double, std::milli>(callback_end - callback_start).count();
+        updatePerformanceStats(infer_ms, total_ms, debug_publish_ms, msg_age_ms, has_msg_stamp);
         
         RCLCPP_DEBUG(this->get_logger(), "Published %zu detections", detection_results.size());
     }
@@ -290,6 +360,85 @@ void ObjectDetectionOpenvinoNode::imageCallback(const sensor_msgs::msg::Image::S
     catch (const std::exception& e) {
         RCLCPP_ERROR(this->get_logger(), "Detection processing error: %s", e.what());
     }
+}
+
+void ObjectDetectionOpenvinoNode::updatePerformanceStats(
+    double infer_ms,
+    double total_ms,
+    double debug_ms,
+    double msg_age_ms,
+    bool has_msg_stamp)
+{
+    if (!enable_performance_log_ || perf_log_interval_ <= 0) {
+        return;
+    }
+
+    if (perf_sample_count_ == 0) {
+        perf_window_start_ = std::chrono::steady_clock::now();
+    }
+
+    perf_sample_count_ += 1;
+    perf_infer_ms_sum_ += infer_ms;
+    perf_total_ms_sum_ += total_ms;
+    perf_debug_ms_sum_ += debug_ms;
+
+    if (has_msg_stamp) {
+        perf_msg_age_ms_sum_ += msg_age_ms;
+        perf_msg_age_count_ += 1;
+    }
+
+    if (perf_sample_count_ < static_cast<std::size_t>(perf_log_interval_)) {
+        return;
+    }
+
+    const auto now = std::chrono::steady_clock::now();
+    const double window_seconds = std::chrono::duration<double>(now - perf_window_start_).count();
+
+    const double avg_infer_ms = perf_infer_ms_sum_ / static_cast<double>(perf_sample_count_);
+    const double avg_total_ms = perf_total_ms_sum_ / static_cast<double>(perf_sample_count_);
+    const double avg_debug_ms = perf_debug_ms_sum_ / static_cast<double>(perf_sample_count_);
+    const double infer_fps = avg_infer_ms > 0.0 ? 1000.0 / avg_infer_ms : 0.0;
+    const double process_fps = avg_total_ms > 0.0 ? 1000.0 / avg_total_ms : 0.0;
+    const double throughput_fps = window_seconds > 0.0 ? static_cast<double>(perf_sample_count_) / window_seconds : 0.0;
+
+    if (perf_msg_age_count_ > 0) {
+        const double avg_msg_age_ms = perf_msg_age_ms_sum_ / static_cast<double>(perf_msg_age_count_);
+        RCLCPP_INFO(
+            this->get_logger(),
+            "[Perf] infer=%.2f ms (%.2f FPS), total=%.2f ms (%.2f FPS), debug_pub=%.2f ms, input_age=%.2f ms, throughput=%.2f FPS",
+            avg_infer_ms,
+            infer_fps,
+            avg_total_ms,
+            process_fps,
+            avg_debug_ms,
+            avg_msg_age_ms,
+            throughput_fps);
+
+        if (avg_msg_age_ms > 500.0) {
+            RCLCPP_WARN(
+                this->get_logger(),
+                "[Perf] input_age=%.2f ms is high. Potential queue backlog (try image_queue_size:=1 or sensor-data QoS).",
+                avg_msg_age_ms);
+        }
+    } else {
+        RCLCPP_INFO(
+            this->get_logger(),
+            "[Perf] infer=%.2f ms (%.2f FPS), total=%.2f ms (%.2f FPS), debug_pub=%.2f ms, throughput=%.2f FPS",
+            avg_infer_ms,
+            infer_fps,
+            avg_total_ms,
+            process_fps,
+            avg_debug_ms,
+            throughput_fps);
+    }
+
+    perf_sample_count_ = 0;
+    perf_msg_age_count_ = 0;
+    perf_infer_ms_sum_ = 0.0;
+    perf_total_ms_sum_ = 0.0;
+    perf_debug_ms_sum_ = 0.0;
+    perf_msg_age_ms_sum_ = 0.0;
+    perf_window_start_ = now;
 }
 
 rm_interfaces::msg::Target2DArray ObjectDetectionOpenvinoNode::convertToRosMessage(

@@ -1,4 +1,4 @@
-object_detection_openvino_node:
+/**:
   ros__parameters:
     # Detection mode
     mode: "armor"
@@ -31,3 +31,10 @@ object_detection_openvino_node:
 
     # Debug options
     publish_debug_image: false
+    enable_performance_log: true
+    perf_log_interval: 60
+
+    # Queue / QoS tuning
+    image_queue_size: 10
+    debug_image_queue_size: 2
+    use_sensor_data_qos: false
