@@ -69,6 +69,12 @@ ros2 launch stereo_yolo_distance stereo_yolo_distance.launch.py \
 - `min_height_iou`: 最小高度IOU阈值（默认：0.5）
   - 控制左右检测框垂直方向的重叠度要求
   - 值越大，匹配越严格
+- `debug_invalid_reason`: 输出无效检测框原因（默认：false）
+  - true: 当存在检测框但无法生成3D目标时，输出具体原因（IOU、类别、视差、距离范围等）
+  - 建议仅在排障时开启
+- `empty_publish_hz`: 空3D消息周期发布频率（默认：10.0）
+  - 当最近一轮匹配未产生有效3D目标时，按该频率发布空的 `/stereo/target3d_array`
+  - 设置为 <= 0 可关闭该功能
 
 ### 距离和视差范围
 
@@ -229,6 +235,8 @@ ros2 run rviz2 rviz2
 - 检查左右相机是否都有检测结果
 - 检查高度IOU是否过于严格，尝试降低 `min_height_iou`
 - 检查视差范围是否合理
+- 当前节点支持在无有效目标时周期发布空的 `/stereo/target3d_array`，可通过 `empty_publish_hz` 调整频率
+- 排障时可将 `debug_invalid_reason` 设为 true，并使用 `--ros-args --log-level stereo_yolo_distance:=debug` 查看原因日志
 
 ### 2. 距离不准确
 

@@ -44,6 +44,8 @@ ObjectDetectionOpenvinoNode::ObjectDetectionOpenvinoNode()
             this->get_logger(),
             "Debug image publisher created (base topic: %s, transport: raw/compressed if plugin is available)",
             debug_image_topic_.c_str());
+    } else {
+        RCLCPP_INFO(this->get_logger(), "Debug image publishing is disabled");
     }
 
     perf_window_start_ = std::chrono::steady_clock::now();

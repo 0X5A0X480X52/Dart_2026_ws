@@ -116,10 +116,10 @@ def generate_launch_description():
                 'detection_topic': '/detector/left/target2d_array',
                 'debug_image_topic': '/detector/left/debug_image',
                 'roi_mode': 'center',
-                'roi_width': 320,
-                'roi_height': 240,
-                'center_x': 636.0,
-                'center_y': -1.0,
+                # 'roi_width': 320,
+                # 'roi_height': 240,
+                # 'center_x': 636.0,
+                # 'center_y': -1.0,
             }
         ],
         remappings=[
@@ -151,10 +151,10 @@ def generate_launch_description():
                 'detection_topic': '/detector/right/target2d_array',
                 'debug_image_topic': '/detector/right/debug_image',
                 'roi_mode': 'center',
-                'roi_width': 320,
-                'roi_height': 240,
-                'center_x': 523.0,
-                'center_y': -1.0,
+                # 'roi_width': 320,
+                # 'roi_height': 240,
+                # 'center_x': 523.0,
+                # 'center_y': -1.0,
             }
         ],
         remappings=[

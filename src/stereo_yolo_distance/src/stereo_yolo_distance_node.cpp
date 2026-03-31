@@ -3,7 +3,9 @@
 
 #include "stereo_yolo_distance/stereo_yolo_distance_node.hpp"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <sstream>
 
 namespace stereo_yolo_distance
 {
@@ -24,6 +26,8 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   this->declare_parameter("min_distance", 0.5);
   this->declare_parameter("max_disparity", 300.0);
   this->declare_parameter("min_disparity", 10.0);
+  this->declare_parameter("debug_invalid_reason", false);
+  this->declare_parameter("empty_publish_hz", 10.0);
   
   // 手动标定参数（可选）
   this->declare_parameter("use_manual_calibration", false);
@@ -43,6 +47,8 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   min_distance_ = this->get_parameter("min_distance").as_double();
   max_disparity_ = this->get_parameter("max_disparity").as_double();
   min_disparity_ = this->get_parameter("min_disparity").as_double();
+  debug_invalid_reason_ = this->get_parameter("debug_invalid_reason").as_bool();
+  empty_publish_hz_ = this->get_parameter("empty_publish_hz").as_double();
   
   use_manual_calibration_ = this->get_parameter("use_manual_calibration").as_bool();
   fx_ = this->get_parameter("fx").as_double();
@@ -69,6 +75,16 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   target3d_pub_ = this->create_publisher<rm_interfaces::msg::Target3DArray>(
     target3d_topic_, 10);
 
+  if (empty_publish_hz_ > 0.0) {
+    const auto period = std::chrono::duration<double>(1.0 / empty_publish_hz_);
+    empty_target3d_timer_ = this->create_wall_timer(
+      std::chrono::duration_cast<std::chrono::nanoseconds>(period),
+      std::bind(&StereoYoloDistanceNode::publishEmptyTarget3DTimerCallback, this));
+  } else {
+    RCLCPP_WARN(this->get_logger(),
+                "Empty target3d periodic publish is disabled because empty_publish_hz <= 0");
+  }
+
   RCLCPP_INFO(this->get_logger(), "Stereo YOLO Distance Node initialized");
   RCLCPP_INFO(this->get_logger(), "  Left target topic: %s", left_target_topic_.c_str());
   RCLCPP_INFO(this->get_logger(), "  Right target topic: %s", right_target_topic_.c_str());
@@ -76,6 +92,8 @@ StereoYoloDistanceNode::StereoYoloDistanceNode(const rclcpp::NodeOptions & optio
   RCLCPP_INFO(this->get_logger(), "  Min height IOU: %.2f", min_height_iou_);
   RCLCPP_INFO(this->get_logger(), "  Distance range: [%.2f, %.2f] m", min_distance_, max_distance_);
   RCLCPP_INFO(this->get_logger(), "  Disparity range: [%.1f, %.1f] pixels", min_disparity_, max_disparity_);
+  RCLCPP_INFO(this->get_logger(), "  Debug invalid reason logs: %s", debug_invalid_reason_ ? "true" : "false");
+  RCLCPP_INFO(this->get_logger(), "  Empty publish frequency: %.2f Hz", empty_publish_hz_);
   
   if (use_manual_calibration_) {
     RCLCPP_INFO(this->get_logger(), "  Using manual calibration: fx=%.2f, baseline=%.3f m", 
@@ -97,6 +115,12 @@ void StereoYoloDistanceNode::leftTargetCallback(
     latest_left_targets_ = msg;
   }
 
+  {
+    std::lock_guard<std::mutex> lock(publish_state_mutex_);
+    has_received_detection_input_ = true;
+    latest_detection_header_ = msg->header;
+  }
+
   // 触发匹配处理（在释放左锁后调用，避免死锁）
   processMatching();
 }
@@ -111,6 +135,12 @@ void StereoYoloDistanceNode::rightTargetCallback(
   {
     std::lock_guard<std::mutex> lock(right_mutex_);
     latest_right_targets_ = msg;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(publish_state_mutex_);
+    has_received_detection_input_ = true;
+    latest_detection_header_ = msg->header;
   }
 
   // 触发匹配处理（在释放右锁后调用，避免死锁）
@@ -150,6 +180,12 @@ void StereoYoloDistanceNode::rightCameraInfoCallback(
 
 void StereoYoloDistanceNode::processMatching()
 {
+  {
+    std::lock_guard<std::mutex> lock(publish_state_mutex_);
+    has_matching_cycle_ = true;
+    latest_cycle_has_valid_target_ = false;
+  }
+
   // 获取最新的左右目标
   rm_interfaces::msg::Target2DArray::ConstSharedPtr left_targets;
   rm_interfaces::msg::Target2DArray::ConstSharedPtr right_targets;
@@ -167,6 +203,11 @@ void StereoYoloDistanceNode::processMatching()
     
     left_targets = latest_left_targets_;
     right_targets = latest_right_targets_;
+  }
+
+  {
+    std::lock_guard<std::mutex> lock(publish_state_mutex_);
+    latest_detection_header_ = left_targets->header;
   }
 
   // 检查是否有标定参数
@@ -193,8 +234,16 @@ void StereoYoloDistanceNode::processMatching()
 
   // 当前假设只有一个目标
   if (left_targets->targets.empty() || right_targets->targets.empty()) {
-    RCLCPP_DEBUG(this->get_logger(), "No targets: left=%zu, right=%zu",
-                 left_targets->targets.size(), right_targets->targets.size());
+    if (debug_invalid_reason_ &&
+        (!left_targets->targets.empty() || !right_targets->targets.empty())) {
+      RCLCPP_INFO_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000,
+        "Skip 3D publish: only one side has detections (left=%zu, right=%zu)",
+        left_targets->targets.size(), right_targets->targets.size());
+    } else {
+      RCLCPP_DEBUG(this->get_logger(), "No targets: left=%zu, right=%zu",
+                   left_targets->targets.size(), right_targets->targets.size());
+    }
     return;  // 至少一侧没有检测到目标
   }
 
@@ -210,10 +259,48 @@ void StereoYoloDistanceNode::processMatching()
   // 尝试匹配
   double height_iou = 0.0;
   if (!matchTargets(left_target, right_target, height_iou)) {
-    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d)",
+    const double disparity = left_target.x - right_target.x;
+    const bool iou_ok = height_iou >= min_height_iou_;
+    const bool class_ok = left_target.class_id == right_target.class_id;
+    const bool disparity_ok = disparity >= min_disparity_ && disparity <= max_disparity_;
+
+    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f, disparity: %.2f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d)",
                  height_iou,
+                 disparity,
                  left_target.id, left_target.x, left_target.y, left_target.width, left_target.height, left_target.class_id,
                  right_target.id, right_target.x, right_target.y, right_target.width, right_target.height, right_target.class_id);
+
+    if (debug_invalid_reason_) {
+      std::ostringstream reason_stream;
+      bool has_reason = false;
+
+      if (!iou_ok) {
+        reason_stream << "height_iou(" << height_iou << ") < min_height_iou(" << min_height_iou_ << ")";
+        has_reason = true;
+      }
+      if (!class_ok) {
+        if (has_reason) {
+          reason_stream << "; ";
+        }
+        reason_stream << "class_mismatch(" << left_target.class_id << " vs " << right_target.class_id << ")";
+        has_reason = true;
+      }
+      if (!disparity_ok) {
+        if (has_reason) {
+          reason_stream << "; ";
+        }
+        reason_stream << "disparity(" << disparity << ") out_of_range[" << min_disparity_ << ", " << max_disparity_ << "]";
+        has_reason = true;
+      }
+      if (!has_reason) {
+        reason_stream << "unknown_match_rejection";
+      }
+
+      const std::string reason_text = reason_stream.str();
+      RCLCPP_INFO_THROTTLE(
+        this->get_logger(), *this->get_clock(), 1000,
+        "Skip 3D publish: invalid stereo pair. reason=%s", reason_text.c_str());
+    }
     return;
   }
 
@@ -227,6 +314,12 @@ void StereoYoloDistanceNode::processMatching()
     target3d_array.targets.push_back(target_3d);
     
     target3d_pub_->publish(target3d_array);
+
+    {
+      std::lock_guard<std::mutex> lock(publish_state_mutex_);
+      latest_cycle_has_valid_target_ = true;
+      latest_detection_header_ = target3d_array.header;
+    }
     
     RCLCPP_INFO(this->get_logger(), 
                 "Published 3D target: distance=%.3f m, position=(%.3f, %.3f, %.3f), IOU=%.3f",
@@ -235,9 +328,56 @@ void StereoYoloDistanceNode::processMatching()
                 height_iou);
   }
   else {
-    RCLCPP_WARN(this->get_logger(), "calculateDistance failed for matched targets: left.x=%.2f,right.x=%.2f,fx=%.2f,baseline=%.3f",
-                left_target.x, right_target.x, fx_, baseline_);
+    const double disparity = left_target.x - right_target.x;
+    if (debug_invalid_reason_) {
+      if (disparity <= 0.0) {
+        RCLCPP_INFO_THROTTLE(
+          this->get_logger(), *this->get_clock(), 1000,
+          "Skip 3D publish: matched pair has non-positive disparity (%.2f)", disparity);
+      } else {
+        const double depth = (fx_ * baseline_) / disparity;
+        if (depth < min_distance_ || depth > max_distance_) {
+          RCLCPP_INFO_THROTTLE(
+            this->get_logger(), *this->get_clock(), 1000,
+            "Skip 3D publish: depth %.3f m out of range [%.2f, %.2f]", depth, min_distance_, max_distance_);
+        } else {
+          RCLCPP_INFO_THROTTLE(
+            this->get_logger(), *this->get_clock(), 1000,
+            "Skip 3D publish: calculateDistance failed with valid disparity/depth constraints");
+        }
+      }
+    }
+
+    RCLCPP_WARN_THROTTLE(this->get_logger(), *this->get_clock(), 2000,
+                         "calculateDistance failed for matched targets: left.x=%.2f,right.x=%.2f,fx=%.2f,baseline=%.3f",
+                         left_target.x, right_target.x, fx_, baseline_);
   }
+}
+
+void StereoYoloDistanceNode::publishEmptyTarget3DTimerCallback()
+{
+  rm_interfaces::msg::Target3DArray empty_msg;
+
+  {
+    std::lock_guard<std::mutex> lock(publish_state_mutex_);
+
+    if (!has_received_detection_input_ || !has_matching_cycle_ || latest_cycle_has_valid_target_) {
+      return;
+    }
+
+    empty_msg.header = latest_detection_header_;
+  }
+
+  if (empty_msg.header.stamp.sec == 0 && empty_msg.header.stamp.nanosec == 0) {
+    empty_msg.header.stamp = this->now();
+  }
+
+  empty_msg.header.frame_id = "camera_left_optical_frame";
+  target3d_pub_->publish(empty_msg);
+
+  RCLCPP_DEBUG_THROTTLE(
+    this->get_logger(), *this->get_clock(), 2000,
+    "Published empty target3d_array because latest matching cycle has no valid 3D target");
 }
 
 bool StereoYoloDistanceNode::matchTargets(

@@ -13,8 +13,8 @@
     # ROI parameters
     # For initial validation, use full frame to avoid missing targets due to cropping.
     roi_mode: "full"
-    roi_width: 320
-    roi_height: 240
+    # roi_width: -1
+    # roi_height: -1
     center_mode: "auto"
     center_x: -1.0
     center_y: -1.0
@@ -30,7 +30,7 @@
     debug_image_topic: "/detector/debug_image"
 
     # Debug options
-    publish_debug_image: false
+    publish_debug_image: true
     enable_performance_log: true
     perf_log_interval: 60
 

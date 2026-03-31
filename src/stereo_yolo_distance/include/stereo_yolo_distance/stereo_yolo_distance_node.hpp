@@ -11,8 +11,8 @@
 #include <rm_interfaces/msg/target3_d.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
+#include <std_msgs/msg/header.hpp>
 #include <mutex>
-#include <memory>
 
 namespace stereo_yolo_distance
 {
@@ -31,6 +31,7 @@ private:
 
   // 处理函数
   void processMatching();
+  void publishEmptyTarget3DTimerCallback();
   
   // 匹配和距离计算
   bool matchTargets(
@@ -55,6 +56,7 @@ private:
 
   // 发布器
   rclcpp::Publisher<rm_interfaces::msg::Target3DArray>::SharedPtr target3d_pub_;
+  rclcpp::TimerBase::SharedPtr empty_target3d_timer_;
 
   // 数据缓存
   rm_interfaces::msg::Target2DArray::ConstSharedPtr latest_left_targets_;
@@ -65,6 +67,7 @@ private:
   std::mutex left_mutex_;
   std::mutex right_mutex_;
   std::mutex camera_info_mutex_;
+  std::mutex publish_state_mutex_;
 
   // 参数
   std::string left_target_topic_;
@@ -79,6 +82,14 @@ private:
   double max_disparity_;        // 最大视差（像素）
   double min_disparity_;        // 最小视差（像素）
   double max_time_diff_;        // 左右检测时间差最大容忍（秒）
+  bool debug_invalid_reason_;   // 在未发布3D时输出无效原因（用于调试）
+  double empty_publish_hz_;     // 无有效目标时空消息发布频率（Hz）
+
+  // 空消息发布状态
+  bool has_received_detection_input_ = false;
+  bool has_matching_cycle_ = false;
+  bool latest_cycle_has_valid_target_ = false;
+  std_msgs::msg::Header latest_detection_header_;
   
   // 相机内参（从camera_info获取或配置文件读取）
   double fx_;                   // 焦距

@@ -8,7 +8,7 @@ stereo_yolo_distance:
     target3d_topic: "/stereo/target3d_array"
     
     # 匹配参数
-    min_height_iou: 0.05          # 最小高度IOU阈值（0-1）
+    min_height_iou: 0.005          # 最小高度IOU阈值（0-1）
     
     # 距离和视差范围
     max_distance: 100.0           # 最大有效距离（米）
@@ -18,16 +18,24 @@ stereo_yolo_distance:
     
     # 相机标定参数
     # 如果use_manual_calibration为false，将从camera_info话题自动获取
-    use_manual_calibration: false
+    use_manual_calibration: true
     
     # 手动标定参数（仅当use_manual_calibration为true时使用）
     # 从 src/rm_hardware_driver/ros2_mindvision_camera/config/camera_info.yaml 获取
     fx: 1550.59436               # 焦距（像素）
-    baseline: 0.120              # 基线距离（米），需要实际测量双目相机的基线
+    baseline: 0.20              # 基线距离（米），需要实际测量双目相机的基线
 
     # 时间容差（秒）：左右相机检测时间允许的最大差值
     # 如果左右检测时间差超过该值，则会被判定为不匹配
     max_time_diff: 0.3
+
+    # 调试开关：当存在检测框但未形成有效3D目标时，输出无效原因
+    # 建议仅在排障时开启，避免日志过多
+    debug_invalid_reason: false
+
+    # 当最近一轮匹配未产生有效3D目标时，周期发布空 Target3DArray
+    # 设为 <= 0 可关闭空消息周期发布
+    empty_publish_hz: 10.0
     
     # 注意事项：
     # 1. fx 值来自 camera_info.yaml 中的 projection_matrix[0,0]

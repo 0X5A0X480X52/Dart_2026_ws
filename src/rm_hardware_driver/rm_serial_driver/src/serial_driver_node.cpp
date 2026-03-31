@@ -182,6 +182,17 @@ void SerialDriverNode::target2dCallback(const rm_interfaces::msg::Target2DArray:
     std::lock_guard<std::mutex> lock(target_2d_mutex_);
     curr_target_2d_ = target;
     has_target_ = true;
+
+    FYT_DEBUG("serial_driver_node", "Received Target2DArray;");
+
+    SerialSendData send_data;
+
+    send_data.Distance = -1.0f;
+    send_data.Pixel_Error = curr_target_2d_.x - desired_pos_x_;
+
+    protocol_->send(send_data);
+
+    FYT_DEBUG("serial_driver_node", "Send Error{}", send_data.Pixel_Error);
     
     } catch (const std::exception &e) {
       FYT_ERROR("serial_driver_node", "Exception in target2dCallback inner: {}", e.what());
@@ -257,7 +268,7 @@ void SerialDriverNode::targetCallback(const rm_interfaces::msg::Target3DArray::S
       send_data.Distance = -1.0f;
       has_target_ = false;
       std::lock_guard<std::mutex> lock(target_2d_mutex_);
-      send_data.Pixel_Error = 0;  // no valid pixel error when no target
+      send_data.Pixel_Error = -1;  // no valid pixel error when no target
     } else {
       send_data.Distance = msg->targets[0].distance;
       has_target_ = true;
@@ -274,7 +285,7 @@ void SerialDriverNode::targetCallback(const rm_interfaces::msg::Target3DArray::S
     }
     
     // Send data via protocol
-    protocol_->send(send_data);
+    // protocol_->send(send_data);
   }
 }
 
