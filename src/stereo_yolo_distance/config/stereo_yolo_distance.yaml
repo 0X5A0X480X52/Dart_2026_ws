@@ -22,8 +22,8 @@ stereo_yolo_distance:
     
     # 手动标定参数（仅当use_manual_calibration为true时使用）
     # 从 src/rm_hardware_driver/ros2_mindvision_camera/config/camera_info.yaml 获取
-    fx: 1550.59436               # 焦距（像素）
-    baseline: 0.20              # 基线距离（米），需要实际测量双目相机的基线
+    fx: 23912.59436               # 焦距（像素）
+    baseline: 0.1840              # 基线距离（米），需要实际测量双目相机的基线
 
     # 时间容差（秒）：左右相机检测时间允许的最大差值
     # 如果左右检测时间差超过该值，则会被判定为不匹配
@@ -31,7 +31,7 @@ stereo_yolo_distance:
 
     # 调试开关：当存在检测框但未形成有效3D目标时，输出无效原因
     # 建议仅在排障时开启，避免日志过多
-    debug_invalid_reason: false
+    debug_invalid_reason: true
 
     # 当最近一轮匹配未产生有效3D目标时，周期发布空 Target3DArray
     # 设为 <= 0 可关闭空消息周期发布

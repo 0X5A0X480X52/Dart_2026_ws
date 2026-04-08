@@ -12,11 +12,11 @@
       image_width: 0   # 图像宽度，0表示使用相机默认值
       image_height: 0  # 图像高度，0表示使用相机默认值
       
-      exposure_time: 2500
+      exposure_time: 1000
       analog_gain: 64
       # 帧率控制 (网口相机使用 frame_rate, USB相机会自动回退到 frame_speed)
       frame_rate: 10    # 帧率(fps): 网口相机支持，建议10-30fps
-      frame_speed: 1    # 帧速度模式(USB相机): 0=Low(推荐双相机), 1=Normal, 2=High, 3=Super
+      frame_speed: 2    # 帧速度模式(USB相机): 0=Low(推荐双相机), 1=Normal, 2=High, 3=Super
       rgb_gain:
         r: 100
         g: 100
@@ -36,11 +36,11 @@
       image_width: 0   # 图像宽度，0表示使用相机默认值
       image_height: 0  # 图像高度，0表示使用相机默认值
       
-      exposure_time: 2500
+      exposure_time: 1000
       analog_gain: 64
       # 帧率控制 (网口相机使用 frame_rate, USB相机会自动回退到 frame_speed)
       frame_rate: 10    # 帧率(fps): 网口相机支持，建议10-30fps
-      frame_speed: 1    # 帧速度模式(USB相机): 0=Low(推荐双相机), 1=Normal, 2=High, 3=Super
+      frame_speed: 2    # 帧速度模式(USB相机): 0=Low(推荐双相机), 1=Normal, 2=High, 3=Super
       rgb_gain:
         r: 100
         g: 100

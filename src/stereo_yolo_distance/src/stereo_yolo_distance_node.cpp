@@ -258,13 +258,14 @@ void StereoYoloDistanceNode::processMatching()
 
   // 尝试匹配
   double height_iou = 0.0;
+  
   if (!matchTargets(left_target, right_target, height_iou)) {
     const double disparity = left_target.x - right_target.x;
     const bool iou_ok = height_iou >= min_height_iou_;
     const bool class_ok = left_target.class_id == right_target.class_id;
     const bool disparity_ok = disparity >= min_disparity_ && disparity <= max_disparity_;
 
-    RCLCPP_DEBUG(this->get_logger(), "Targets do not match (height IOU: %.3f, disparity: %.2f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d)",
+    RCLCPP_INFO(this->get_logger(), "Targets do not match (height IOU: %.3f, disparity: %.2f). left=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d), right=(id=%d,x=%.1f,y=%.1f,w=%.1f,h=%.1f,cls=%d)",
                  height_iou,
                  disparity,
                  left_target.id, left_target.x, left_target.y, left_target.width, left_target.height, left_target.class_id,
@@ -417,6 +418,9 @@ double StereoYoloDistanceNode::calculateHeightIOU(
   float left_y, float left_height,
   float right_y, float right_height)
 {
+  RCLCPP_DEBUG(this->get_logger(), "left (y, height) : [%.2f, %.2f], right (y, height) : [%.2f, %.2f]",
+                 left_y, left_height, right_y, right_height);
+
   // 计算上下边界
   float left_top = left_y - left_height / 2.0f;
   float left_bottom = left_y + left_height / 2.0f;
